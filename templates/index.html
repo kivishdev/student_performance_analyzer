@@ -7,129 +7,177 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
-        body { font-family: 'Roboto', sans-serif; background-color: #f4f7f6; }
-        /* Mobile Bottom Nav */
-        .bottom-nav { display: flex; }
-        .top-nav { display: none; }
-        @media (min-width: 1024px) {
-            .bottom-nav { display: none; }
-            .top-nav { display: flex; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #e2e8f0;
+            overflow-x: hidden;
         }
-        .nav-button.active { color: #3f51b5; }
+
+        .aurora-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.15), transparent 35%),
+                        radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.15), transparent 35%),
+                        radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.1), transparent 30%);
+            animation: aurora 25s infinite linear;
+        }
+
+        @keyframes aurora {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active { color: #5eead4; border-bottom-color: #5eead4; }
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeIn 0.5s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .prose h3 { font-size: 1.25rem; font-weight: 700; margin-top: 1.5em; margin-bottom: 0.75em; border-bottom: 1px solid #e0e0e0; padding-bottom: 0.5rem; color: #3f51b5;}
-        .prose p { line-height: 1.7; color: #424242;}
-        .chat-message { max-width: 80%; }
-        .user-message { background-color: #3f51b5; color: white; margin-left: auto; }
-        .ai-message { background-color: #eeeeee; color: #212121; }
-        .option-card.selected { border-color: #3f51b5; background-color: #e8eaf6; }
-        .fab { transition: transform 0.2s ease-out; }
-        .fab:hover { transform: scale(1.05); }
-        .new-feature-star { color: #f59e0b; font-size: 0.6rem; vertical-align: super; animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .prose h3 { color: #5eead4; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
+        .prose p { color: #94a3b8; }
+        .prose strong { color: #e2e8f0; }
+
+        .chat-message.user-message { background-color: #0e7490; color: white; margin-left: auto; }
+        .chat-message.ai-message { background-color: #1e293b; color: #cbd5e1; }
+
+        .option-card.selected { border-color: #5eead4; background-color: rgba(45, 212, 191, 0.1); transform: translateY(-2px); }
+        .option-card:not(.selected):hover { background-color: #1e293b; }
+
+        .fab { background: linear-gradient(to right, #14b8a6, #06b6d4); }
+        .fab:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 10px 20px rgba(13, 148, 136, 0.25); }
+        .fab:disabled { background: #334155; cursor: not-allowed; }
+
+        .new-feature-star { color: #facc15; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.2); } }
+
+        .result-section {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideUp 0.5s forwards ease-out;
+        }
+        @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="text-gray-900 pb-20 lg:pb-0">
+<body class="pb-20 lg:pb-0">
+    <div class="aurora-bg"></div>
 
     <div class="container mx-auto px-4 py-8">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Student Performance Analyzer</h1>
-            <p class="mt-2 text-md text-indigo-700">Material Design Edition</p>
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-white">Student Performance Analyzer</h1>
+            <p class="mt-3 text-lg text-teal-300">AI-Powered Insights for Academic & Career Growth</p>
         </header>
 
-        <!-- Main Content for Mobile & Desktop -->
         <div class="lg:grid lg:grid-cols-2 lg:gap-8">
-            
-            <!-- This container holds tabs for mobile -->
-            <div id="main-content-container">
+            <!-- Left Column: Input Panel -->
+            <main class="glass-card rounded-2xl shadow-2xl p-6 md:p-8">
+                <div class="hidden lg:block border-b border-slate-700 mb-6">
+                    <nav class="flex space-x-8" aria-label="Tabs">
+                        <button id="tab-btn-analyzer-desktop" onclick="switchTab('analyzer')" class="tab-button active pb-3 px-1 border-b-2 font-medium text-sm">
+                            <i class="fas fa-chart-bar mr-2"></i> Performance Analyzer
+                        </button>
+                        <button id="tab-btn-career-desktop" onclick="switchTab('career')" class="tab-button pb-3 px-1 border-b-2 font-medium text-sm text-slate-400">
+                            <i class="fas fa-briefcase mr-2"></i> AI Career Guide <i class="fas fa-star new-feature-star text-xs"></i>
+                        </button>
+                    </nav>
+                </div>
 
-                <!-- Performance Analyzer Tab -->
-                <div id="tab-content-analyzer" class="tab-content active space-y-6">
-                    <!-- Data Source Card -->
-                    <div class="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
-                        <h2 class="font-bold text-xl mb-4 text-gray-800">Data Source</h2>
+                <div id="main-content-container">
+                    <div id="tab-content-analyzer" class="tab-content active space-y-8">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center justify-center h-10 w-10 rounded-full bg-slate-700 text-teal-300 font-bold text-lg">1</div>
+                            <div>
+                                <h2 class="font-bold text-xl text-slate-200">Provide Data Source</h2>
+                                <p class="text-sm text-slate-400">Upload a file or paste text to begin.</p>
+                            </div>
+                        </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div id="drop-zone" class="flex flex-col items-center justify-center w-full p-6 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:border-indigo-500 transition bg-gray-50">
-                                <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
-                                <span class="font-medium text-indigo-600 text-sm">Upload File</span>
-                                <p id="file-name-display" class="text-xs text-gray-500 mt-1">or drag & drop</p>
+                            <div id="drop-zone" class="flex flex-col items-center justify-center w-full p-6 border-2 border-slate-600 border-dashed rounded-lg cursor-pointer hover:border-teal-400 transition bg-slate-900/50">
+                                <i class="fas fa-cloud-upload-alt text-3xl text-slate-500 mb-2"></i>
+                                <span class="font-medium text-teal-400 text-sm">Upload File</span>
+                                <p id="file-name-display" class="text-xs text-slate-500 mt-1">or drag & drop</p>
                                 <input id="file-upload" name="file" type="file" class="sr-only">
                             </div>
-                            <textarea id="text_input" name="text_input" rows="5" class="w-full sm:text-sm rounded-md p-3 focus:outline-none border border-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-gray-50" placeholder="Or paste plain text..."></textarea>
+                            <textarea id="text_input" name="text_input" rows="5" class="w-full sm:text-sm rounded-lg p-3 focus:outline-none border border-slate-700 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 bg-slate-900/50" placeholder="Or paste text here...&#10;e.g.,&#10;Math: 85, Science: 92&#10;Or an essay for analysis."></textarea>
                         </div>
-                    </div>
-                    
-                    <!-- Analysis Type Card -->
-                    <div class="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
-                        <h2 class="font-bold text-xl mb-4 text-gray-800">Analysis Type</h2>
+                        
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center justify-center h-10 w-10 rounded-full bg-slate-700 text-teal-300 font-bold text-lg">2</div>
+                            <h2 class="font-bold text-xl text-slate-200">Select Analysis Type</h2>
+                        </div>
                         <div id="analysis-options" class="grid grid-cols-3 gap-4">
-                            <div class="option-card border-2 border-gray-200 rounded-lg p-4 cursor-pointer transition-all duration-200 text-center" onclick="selectOption(this, '1')">
-                                <i class="fas fa-user text-blue-500 text-2xl mb-2"></i>
-                                <h3 class="font-medium text-gray-800 text-sm">Individual</h3>
+                            <div class="option-card border border-slate-700 rounded-lg p-4 cursor-pointer text-center" onclick="selectOption(this, '1')">
+                                <i class="fas fa-user text-blue-400 text-2xl mb-2"></i><h3 class="font-medium text-slate-200 text-sm">Individual</h3>
                             </div>
-                            <div class="option-card border-2 border-gray-200 rounded-lg p-4 cursor-pointer transition-all duration-200 text-center" onclick="selectOption(this, '2')">
-                                 <i class="fas fa-users text-purple-500 text-2xl mb-2"></i>
-                                <h3 class="font-medium text-gray-800 text-sm">Comparative</h3>
+                            <div class="option-card border border-slate-700 rounded-lg p-4 cursor-pointer text-center" onclick="selectOption(this, '2')">
+                                <i class="fas fa-users text-purple-400 text-2xl mb-2"></i><h3 class="font-medium text-slate-200 text-sm">Comparative</h3>
                             </div>
-                            <div class="option-card border-2 border-indigo-500 rounded-lg p-4 cursor-pointer transition-all duration-200 selected text-center" onclick="selectOption(this, '3')">
-                                 <i class="fas fa-layer-group text-indigo-500 text-2xl mb-2"></i>
-                                <h3 class="font-medium text-gray-800 text-sm">Complete</h3>
+                            <div class="option-card border border-slate-700 rounded-lg p-4 cursor-pointer selected text-center" onclick="selectOption(this, '3')">
+                                <i class="fas fa-layer-group text-teal-400 text-2xl mb-2"></i><h3 class="font-medium text-slate-200 text-sm">Complete</h3>
                             </div>
                             <input type="hidden" name="analysis_type" id="analysis_type_input" value="3">
                         </div>
-                    </div>
-                    
-                    <!-- Action Button -->
-                    <div class="text-center mt-6">
-                        <button id="generate-btn" class="fab w-full inline-flex items-center justify-center px-8 py-4 border border-transparent text-base font-medium rounded-full shadow-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            <i class="fas fa-cogs mr-3"></i> Generate Analysis
-                        </button>
-                    </div>
-                </div>
-
-                <!-- AI Career Guide Tab -->
-                <div id="tab-content-career" class="tab-content">
-                    <div class="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
-                        <h2 class="font-bold text-xl mb-4 text-gray-800">AI Career Guide <i class="fas fa-star new-feature-star"></i></h2>
-                         <p class="text-gray-600 mb-4 text-sm">Get started with a preset, or ask your own question below.</p>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                            <div class="preset-card border border-gray-200 rounded-lg p-4 cursor-pointer transition" onclick="handlePresetClick('Based on my high grades in Math and Physics, what are some suitable engineering career paths?')">
-                                <h4 class="font-semibold text-gray-800">Career Paths</h4>
-                                <p class="text-sm text-gray-500 mt-1">Based on strengths...</p>
-                            </div>
-                             <div class="preset-card border border-gray-200 rounded-lg p-4 cursor-pointer transition" onclick="handlePresetClick('I enjoy creative writing but struggle with deadlines. What careers fit this profile and how can I improve?')">
-                                <h4 class="font-semibold text-gray-800">Skills & Improvement</h4>
-                                <p class="text-sm text-gray-500 mt-1">How to improve...</p>
-                            </div>
+                        
+                        <div class="pt-4">
+                            <button id="generate-btn" class="fab w-full inline-flex items-center justify-center px-8 py-4 border border-transparent text-base font-medium rounded-full shadow-lg text-white" disabled>
+                                <i id="btn-icon" class="fas fa-arrow-up mr-3"></i> <span id="btn-text">Provide a Data Source</span>
+                            </button>
                         </div>
-                        <div id="chat-container" class="rounded-lg overflow-hidden flex flex-col h-96 bg-gray-100 border border-gray-200">
-                            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-4">
-                                 <div class="chat-message ai-message p-3 rounded-lg">
-                                    <p class="font-semibold text-indigo-600">AI Counselor</p>
-                                    <p>Hello! How can I help you explore your future career path today?</p>
+                    </div>
+
+                    <div id="tab-content-career" class="tab-content">
+                         <div class="space-y-6">
+                            <div>
+                                <h2 class="font-bold text-xl text-slate-200">AI Career Guide <i class="fas fa-star new-feature-star text-xs"></i></h2>
+                                <p class="text-sm text-slate-400 mt-1">Get started with a preset, or ask your own question.</p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-4">
+                                    <div class="glass-card rounded-lg p-4 cursor-pointer transition border border-slate-700 hover:border-teal-400" onclick="handlePresetClick('Based on my high grades in Math and Physics, what are some suitable engineering career paths?')">
+                                        <h4 class="font-semibold text-slate-200">Career Paths</h4>
+                                    </div>
+                                    <div class="glass-card rounded-lg p-4 cursor-pointer transition border border-slate-700 hover:border-teal-400" onclick="handlePresetClick('I enjoy creative writing but struggle with deadlines. What careers fit this profile and how can I improve?')">
+                                        <h4 class="font-semibold text-slate-200">Skills & Improvement</h4>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="p-2 border-t border-gray-200 bg-white">
-                                <form id="career-form" class="flex items-center">
-                                    <input type="text" id="career-input" class="flex-1 p-3 bg-transparent border-none focus:ring-0" placeholder="Type your message..." autocomplete="off">
-                                    <button type="submit" class="w-12 h-12 flex items-center justify-center bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition"><i class="fas fa-paper-plane"></i></button>
-                                </form>
+                            <div id="chat-container" class="rounded-lg overflow-hidden flex flex-col h-96 bg-slate-900/50 border border-slate-700">
+                                <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-4">
+                                    <div class="chat-message ai-message p-3 rounded-lg">
+                                        <p class="font-semibold text-teal-400">AI Counselor</p>
+                                        <p>Hello! How can I help you explore your future career path today?</p>
+                                    </div>
+                                </div>
+                                <div class="p-2 border-t border-slate-700">
+                                    <form id="career-form" class="flex items-center">
+                                        <input type="text" id="career-input" class="flex-1 p-3 bg-transparent border-none focus:ring-0 text-slate-200" placeholder="Type your message..." autocomplete="off">
+                                        <button type="submit" class="w-12 h-12 flex items-center justify-center bg-teal-600 text-white rounded-full hover:bg-teal-700 transition"><i class="fas fa-paper-plane"></i></button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </main>
 
             <!-- Right Column (Desktop Only): Output Panel -->
-            <section id="results-section" class="bg-white rounded-2xl shadow-md p-6 md:p-8 border border-gray-200 hidden lg:block">
-                 <div id="results-content-desktop" class="h-full flex flex-col relative z-10">
+            <section id="results-section" class="glass-card rounded-2xl shadow-2xl p-6 md:p-8 hidden lg:block">
+                 <div id="results-content-desktop" class="h-full flex flex-col relative z-10 overflow-y-auto">
                      <div class="flex-grow flex items-center justify-center text-center">
                          <div>
-                             <i class="fas fa-lightbulb text-5xl text-gray-300"></i>
-                             <p class="mt-4 text-lg font-medium text-gray-500">Your analysis results will appear here.</p>
+                             <i class="fas fa-lightbulb text-6xl text-slate-700"></i>
+                             <p class="mt-4 text-lg font-medium text-slate-500">Your analysis results will appear here.</p>
                          </div>
                      </div>
                  </div>
@@ -138,23 +186,25 @@
     </div>
 
     <!-- Bottom Navigation (Mobile Only) -->
-    <nav class="bottom-nav lg:hidden fixed bottom-0 left-0 right-0 bg-white shadow-t border-t border-gray-200 h-16 z-40">
-        <button id="nav-btn-analyzer" onclick="switchTab('analyzer')" class="nav-button active flex-1 flex flex-col items-center justify-center text-gray-500">
-            <i class="fas fa-chart-bar text-xl"></i>
-            <span class="text-xs mt-1">Analyzer</span>
-        </button>
-        <button id="nav-btn-career" onclick="switchTab('career')" class="nav-button flex-1 flex flex-col items-center justify-center text-gray-500">
-            <i class="fas fa-briefcase text-xl"></i>
-            <span class="text-xs mt-1">Career Guide</span>
-        </button>
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/80 backdrop-blur-md border-t border-slate-700 h-16 z-40">
+        <div class="flex h-full">
+            <button id="nav-btn-analyzer" onclick="switchTab('analyzer')" class="nav-button active flex-1 flex flex-col items-center justify-center text-slate-400">
+                <i class="fas fa-chart-bar text-xl"></i>
+                <span class="text-xs mt-1">Analyzer</span>
+            </button>
+            <button id="nav-btn-career" onclick="switchTab('career')" class="nav-button flex-1 flex flex-col items-center justify-center text-slate-400">
+                <i class="fas fa-briefcase text-xl"></i>
+                <span class="text-xs mt-1">Career Guide</span>
+            </button>
+        </div>
     </nav>
 
     <!-- Full Screen Results Modal (Mobile Only) -->
-    <div id="results-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex flex-col p-4 hidden z-50 lg:hidden">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col flex-1">
-            <header class="p-4 border-b flex justify-between items-center">
-                <h2 class="text-xl font-bold text-gray-800">Analysis Results</h2>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+    <div id="results-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex flex-col p-4 hidden z-50 lg:hidden">
+        <div class="glass-card rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col flex-1">
+            <header class="p-4 border-b border-slate-700 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-slate-200">Analysis Results</h2>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
             </header>
             <div id="results-content-mobile" class="p-6 overflow-y-auto">
                 <!-- Content will be injected here -->
@@ -163,10 +213,13 @@
     </div>
 
 <script>
-    // --- UI LOGIC ---
     const navButtons = {
         analyzer: document.getElementById('nav-btn-analyzer'),
         career: document.getElementById('nav-btn-career'),
+    };
+     const desktopNavButtons = {
+        analyzer: document.getElementById('tab-btn-analyzer-desktop'),
+        career: document.getElementById('tab-btn-career-desktop'),
     };
     const tabContents = {
         analyzer: document.getElementById('tab-content-analyzer'),
@@ -174,68 +227,88 @@
     };
     
     function switchTab(tabName) {
-        Object.values(navButtons).forEach(btn => btn.classList.remove('active'));
+        const isMobile = window.innerWidth < 1024;
+        const currentNavs = isMobile ? navButtons : desktopNavButtons;
+
+        Object.values(currentNavs).forEach(btn => btn.classList.remove('active', 'text-teal-300'));
+        if(isMobile) Object.values(currentNavs).forEach(btn => btn.classList.add('text-slate-400'));
+        else Object.values(currentNavs).forEach(btn => btn.classList.add('text-slate-400'));
+        
         Object.values(tabContents).forEach(content => content.classList.remove('active'));
         
-        navButtons[tabName].classList.add('active');
+        currentNavs[tabName].classList.add('active', 'text-teal-300');
+        currentNavs[tabName].classList.remove('text-slate-400');
         tabContents[tabName].classList.add('active');
     }
+    
+    function handlePresetClick(question) {
+        const careerInput = document.getElementById('career-input');
+        careerInput.value = question;
+        careerInput.focus();
+        if(window.innerWidth < 1024) { // On mobile, switch to tab first
+            switchTab('career');
+        }
+    }
+
+    const generateBtn = document.getElementById('generate-btn');
+    const btnIcon = document.getElementById('btn-icon');
+    const btnText = document.getElementById('btn-text');
+    const fileInput = document.getElementById('file-upload');
+    const textInput = document.getElementById('text_input');
+
+    function updateButtonState() {
+        if (fileInput.files.length > 0 || textInput.value.trim() !== '') {
+            generateBtn.disabled = false;
+            btnIcon.className = 'fas fa-cogs mr-3';
+            btnText.textContent = 'Generate Analysis';
+        } else {
+            generateBtn.disabled = true;
+            btnIcon.className = 'fas fa-arrow-up mr-3';
+            btnText.textContent = 'Provide a Data Source';
+        }
+    }
+
+    fileInput.addEventListener('change', updateButtonState);
+    textInput.addEventListener('input', updateButtonState);
 
     const dropZone = document.getElementById('drop-zone');
-    const fileUpload = document.getElementById('file-upload');
     const fileNameDisplay = document.getElementById('file-name-display');
 
-    dropZone.onclick = () => fileUpload.click();
-    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('border-indigo-500', 'bg-indigo-50'); };
-    dropZone.ondragleave = () => dropZone.classList.remove('border-indigo-500', 'bg-indigo-50');
+    dropZone.onclick = () => fileInput.click();
+    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('border-teal-400', 'bg-slate-700'); };
+    dropZone.ondragleave = () => dropZone.classList.remove('border-teal-400', 'bg-slate-700');
     dropZone.ondrop = (e) => {
         e.preventDefault();
-        dropZone.classList.remove('border-indigo-500', 'bg-indigo-50');
+        dropZone.classList.remove('border-teal-400', 'bg-slate-700');
         if (e.dataTransfer.files.length) {
-            fileUpload.files = e.dataTransfer.files;
+            fileInput.files = e.dataTransfer.files;
             fileNameDisplay.textContent = e.dataTransfer.files[0].name;
-            fileNameDisplay.classList.add('text-green-600', 'font-semibold');
-        }
-    };
-    fileUpload.onchange = () => {
-        if (fileUpload.files.length) {
-            fileNameDisplay.textContent = fileUpload.files[0].name;
-            fileNameDisplay.classList.add('text-green-600', 'font-semibold');
+            fileNameDisplay.classList.add('text-green-400');
+            updateButtonState();
         }
     };
 
     function selectOption(element, value) {
-        document.querySelectorAll('.option-card').forEach(card => card.classList.remove('selected', 'border-indigo-500'));
-        element.classList.add('selected', 'border-indigo-500');
+        document.querySelectorAll('.option-card').forEach(card => card.classList.remove('selected'));
+        element.classList.add('selected');
         document.getElementById('analysis_type_input').value = value;
     }
 
-    function handlePresetClick(question) {
-        switchTab('career');
-        const careerInput = document.getElementById('career-input');
-        careerInput.value = question;
-        careerInput.focus();
-    }
-    
-    // --- MODAL & RESULTS LOGIC ---
     const resultsModal = document.getElementById('results-modal');
-    const resultsContentDesktop = document.getElementById('results-content-desktop');
-    const resultsContentMobile = document.getElementById('results-content-mobile');
-
     function closeModal() {
         resultsModal.classList.add('hidden');
     }
 
-    // --- API LOGIC ---
-    const generateBtn = document.getElementById('generate-btn');
     const careerForm = document.getElementById('career-form');
+    const resultsContentDesktop = document.getElementById('results-content-desktop');
+    const resultsContentMobile = document.getElementById('results-content-mobile');
     const chatMessages = document.getElementById('chat-messages');
 
     generateBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         const formData = new FormData();
-        formData.append('file', fileUpload.files[0]);
-        formData.append('text_input', document.getElementById('text_input').value);
+        formData.append('file', fileInput.files[0] || new File([], ''));
+        formData.append('text_input', textInput.value);
         formData.append('analysis_type', document.getElementById('analysis_type_input').value);
 
         showLoading();
@@ -245,10 +318,8 @@
                 method: 'POST',
                 body: formData
             });
-
             const results = await response.json();
             if (!response.ok) throw new Error(results.error || 'An unknown error occurred.');
-            
             displayAnalysisResults(results);
         } catch (error) {
             displayError(error.message);
@@ -278,12 +349,11 @@
         }
     });
 
-    // --- HELPER FUNCTIONS ---
     function showLoading() {
         const loadingHTML = `<div class="h-full flex items-center justify-center text-center">
             <div>
-                <i class="fas fa-spinner fa-spin text-indigo-500 text-4xl"></i>
-                <p class="mt-4 text-lg font-medium text-gray-600">Generating insights...</p>
+                <i class="fas fa-spinner fa-spin text-teal-400 text-4xl"></i>
+                <p class="mt-4 text-lg font-medium text-slate-400">Generating insights...</p>
             </div>
         </div>`;
         resultsContentDesktop.innerHTML = loadingHTML;
@@ -294,7 +364,7 @@
     }
 
     function displayError(errorMessage) {
-        const errorHTML = `<div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md">
+        const errorHTML = `<div class="bg-red-900/50 border-l-4 border-red-500 text-red-300 p-4 rounded-md">
             <h3 class="font-bold">Error</h3>
             <p>${errorMessage}</p>
         </div>`;
@@ -306,24 +376,26 @@
     }
 
     function displayAnalysisResults(results) {
-        let html = '<div class="prose max-w-none">';
+        let html = '<div class="prose prose-invert max-w-none">';
         if (results.standard) {
             html += `
-                <div>
-                    <h3><i class="fas fa-user-graduate mr-2 text-blue-500"></i>Individual Analysis</h3>
+                <div class="result-section" style="animation-delay: 100ms;">
+                    <h3><i class="fas fa-user-graduate mr-2 text-blue-400"></i>Individual Analysis</h3>
                     <p>${results.standard.replace(/\n/g, '<br>')}</p>
                 </div>`;
         }
         if (results.comparative) {
              html += `
-                <div class="mt-8">
-                    <h3><i class="fas fa-users mr-2 text-purple-500"></i>Comparative Analysis</h3>
+                <div class="result-section mt-8" style="animation-delay: 300ms;">
+                    <h3><i class="fas fa-users mr-2 text-purple-400"></i>Comparative Analysis</h3>
                     <p>${results.comparative.replace(/\n/g, '<br>')}</p>
                 </div>`;
         }
         html += '</div>';
+        
         resultsContentDesktop.innerHTML = html;
         resultsContentMobile.innerHTML = html;
+
         if(window.innerWidth < 1024) {
             resultsModal.classList.remove('hidden');
         }
@@ -333,11 +405,14 @@
         const messageEl = document.createElement('div');
         messageEl.classList.add('chat-message', `${sender}-message`, 'p-3', 'rounded-lg', 'shadow-sm');
         messageEl.innerHTML = sender === 'ai' 
-            ? `<p class="font-semibold text-indigo-600">AI Counselor</p><p>${message.replace(/\n/g, '<br>')}</p>`
+            ? `<p class="font-semibold text-teal-400">AI Counselor</p><p>${message.replace(/\n/g, '<br>')}</p>`
             : `<p>${message}</p>`;
         chatMessages.appendChild(messageEl);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
+
+    // Initialize button state
+    updateButtonState();
 </script>
 </body>
 </html>
