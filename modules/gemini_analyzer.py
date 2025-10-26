@@ -172,34 +172,38 @@ Start analyzing now."""
         else:
             text_data = student_data
 
-        prompt = f"""Analyze this student text in 5 focused sections:
+        prompt = f"""Based on this student's writing, analyze their academic abilities and future potential:
 
-1. CONTENT (3 points):
-   • Main argument/theme
-   • Evidence quality
-   • Depth of analysis
+1. STUDENT SKILLS (3 points):
+   • Communication ability level
+   • Critical thinking capability
+   • Academic readiness
 
-2. WRITING QUALITY (3 points):
-   • Clarity and structure
-   • Grammar and style
-   • Vocabulary level
+2. LEARNING STRENGTHS (2 points):
+   • Best learning traits shown
+   • Natural talents observed
 
-3. STRENGTHS (2 points):
-   What works well
+3. AREAS TO DEVELOP (2 points):
+   • Skills needing practice
+   • Knowledge gaps to fill
 
-4. IMPROVEMENTS (2 points):
-   Specific fixes needed
+4. CAREER POTENTIAL (3 points):
+   • Suitable career paths based on writing
+   • Subject areas to explore
+   • Academic majors to consider
 
-5. GRADE LEVEL:
-   Estimated level with one reason
+5. FUTURE GUIDANCE (2 points):
+   • Next steps for improvement
+   • Recommended focus areas
 
 Format: Plain text, bullet points (•), no ** or *.
-Keep each point to ONE sentence. Total: 250 words max.
+Each point ONE sentence. Focus on the STUDENT, not just the text.
+Total: 250 words max.
 
-Text:
+Student's Writing:
 {text_data}
 
-Start analysis now."""
+Analyze the student now."""
 
     else:
         logging.error("Invalid data type for analysis")
@@ -265,34 +269,37 @@ Data:
 Start analysis now."""
 
     else:
-        prompt = f"""Analyze this writing sample for research. Provide EXACTLY 5 sections:
+        prompt = f"""Analyze the student behind this writing sample:
 
-1. COMPLEXITY LEVEL:
-   • Vocabulary sophistication
-   • Sentence structure variety
-   • Argument depth
+1. STUDENT PROFILE:
+   • Academic maturity level
+   • Learning style indicators
+   • Intellectual curiosity shown
 
-2. WRITING MATURITY:
-   • Academic development indicators
-   • Age-appropriate markers
+2. ACADEMIC STRENGTHS:
+   • Subject areas they'd excel in
+   • Natural abilities demonstrated
 
-3. KEY THEMES:
-   • Main topics to explore
-   • Research potential
+3. SKILL GAPS:
+   • Areas needing development
+   • Learning challenges observed
 
-4. BENCHMARK:
-   • Estimated grade level
-   • Comparison to peers
+4. CAREER DIRECTIONS:
+   • Suitable career fields
+   • Educational paths to consider
+   • Industry sectors matching skills
 
-5. TEACHING FOCUS:
-   • Skills to develop
-   • Learning priorities
+5. DEVELOPMENT PLAN:
+   • Short-term goals (next 6 months)
+   • Long-term focus areas
+   • Resources to use
 
 Format: Plain text, bullet points (•), no ** or *.
-Keep it to 250 words max.
+Focus on the STUDENT'S potential and future, not just the text.
+250 words max.
 
 Text length: {len(student_data)} characters
 
-Start analysis now."""
+Analyze the student now."""
 
     return prompt
