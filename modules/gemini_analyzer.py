@@ -150,39 +150,20 @@ def _create_analysis_prompt(student_data):
             data_string = student_data.to_string()
             data_note = ""
 
-        prompt = f"""You are an expert educational data analyst conducting academic research on student performance.
+        prompt = f"""Analyze each student's performance. For EACH student provide EXACTLY 4 points:
 
-IMPORTANT FORMATTING RULES:
-- Write in plain text only
-- Use bullet points with • symbol for lists
-- Use simple numbered lists (1. 2. 3.) where needed
-- Do NOT use **, *, __, #, or ``` markdown symbols
-- Keep sections clear with line breaks
-- Write naturally without special formatting
+1. Current Performance: One sentence about grades/scores
+2. Strongest Subject: One specific strength
+3. Needs Improvement: One specific weakness  
+4. Action: One clear recommendation
 
-Your task: Provide a detailed, research-quality performance analysis for each student.
+Format: No **, *, #, or ``` symbols. Use bullet points (•).
+Be direct and concise - 2-3 sentences per student maximum.
 
-For each student, provide:
-
-Student Name:
-• Academic Performance: Brief overview of grades/scores
-• Key Strength: One specific area of excellence
-• Improvement Area: One actionable recommendation
-• Overall Assessment: Brief characterization
-
-Guidelines:
-- Be objective and data-driven
-- Keep each student analysis to 3-4 points
-- Use professional academic language
-- Focus on constructive feedback
-- Identify patterns and trends
-
-Student Data:{data_note}
----
+Data:{data_note}
 {data_string}
----
 
-Provide individual analysis for each student listed above. Format cleanly with clear sections."""
+Start analyzing now."""
 
     elif isinstance(student_data, str):
         # Limit text length for API
@@ -191,50 +172,34 @@ Provide individual analysis for each student listed above. Format cleanly with c
         else:
             text_data = student_data
 
-        prompt = f"""You are an expert literary and academic analyst conducting research on student writing.
+        prompt = f"""Analyze this student text in 5 focused sections:
 
-IMPORTANT FORMATTING RULES:
-- Write in plain text only
-- Use bullet points with • symbol for lists
-- Do NOT use **, *, __, #, or ``` markdown symbols
-- Keep sections clear with line breaks
-- Write naturally without special formatting
+1. CONTENT (3 points):
+   • Main argument/theme
+   • Evidence quality
+   • Depth of analysis
 
-Your task: Provide a comprehensive analysis of the following student text.
+2. WRITING QUALITY (3 points):
+   • Clarity and structure
+   • Grammar and style
+   • Vocabulary level
 
-Please analyze:
+3. STRENGTHS (2 points):
+   What works well
 
-Content Analysis:
-• Key themes and arguments presented
-• Main ideas and supporting evidence
+4. IMPROVEMENTS (2 points):
+   Specific fixes needed
 
-Writing Quality:
-• Style, clarity, and structure assessment
-• Coherence and flow evaluation
+5. GRADE LEVEL:
+   Estimated level with one reason
 
-Critical Strengths:
-• What the student does well
-• Notable writing techniques
+Format: Plain text, bullet points (•), no ** or *.
+Keep each point to ONE sentence. Total: 250 words max.
 
-Areas for Improvement:
-• Specific, actionable suggestions
-• Developmental feedback
-
-Academic Level:
-• Estimated proficiency with justification
-
-Guidelines:
-- Be thorough and research-oriented
-- Provide evidence-based observations
-- Use professional academic language
-- Focus on developmental feedback
-
-Student Text:
----
+Text:
 {text_data}
----
 
-Provide your comprehensive analysis above. Write in clean, plain text format."""
+Start analysis now."""
 
     else:
         logging.error("Invalid data type for analysis")
@@ -256,7 +221,7 @@ def _create_comparative_prompt(student_data):
         # Calculate basic statistics
         numeric_cols = student_data.select_dtypes(include=['number']).columns
         
-        stats_summary = "Statistical Summary:\n"
+        stats_summary = "Stats:\n"
         for col in numeric_cols:
             stats_summary += f"• {col}: Mean={student_data[col].mean():.2f}, "
             stats_summary += f"Median={student_data[col].median():.2f}, "
@@ -264,89 +229,70 @@ def _create_comparative_prompt(student_data):
 
         data_string = student_data.to_string()
 
-        prompt = f"""You are an expert educational researcher conducting class-wide performance analysis.
+        prompt = f"""Analyze this class data. Provide EXACTLY these 5 sections:
 
-IMPORTANT FORMATTING RULES:
-- Write in plain text only
-- Use bullet points with • symbol for lists
-- Use numbered lists (1. 2. 3.) for ordered items
-- Do NOT use **, *, __, #, or ``` markdown symbols
-- Keep sections clear with line breaks
-- Write naturally without special formatting
+1. CLASS OVERVIEW (3 bullets):
+   • Overall performance level
+   • Achievement distribution
+   • Key observation
 
-Your task: Provide a comprehensive comparative analysis of this student cohort for research purposes.
+2. TOP PERFORMERS (2 bullets):
+   • Who are they
+   • Common traits
+
+3. STRUGGLING STUDENTS (2 bullets):
+   • Who needs help
+   • Common challenges
+
+4. PATTERNS (3 bullets):
+   • Subject-wise trends
+   • Performance correlations
+   • Notable outliers
+
+5. ACTIONS (3 bullets):
+   • Priority interventions
+   • Teaching strategies
+   • Focus areas
+
+Format: Plain text, bullet points (•), no ** or *.
+Keep each point to ONE sentence. Total: 300 words max.
 
 {stats_summary}
 
-Full Dataset:
----
+Data:
 {data_string}
----
 
-Please provide:
-
-CLASS OVERVIEW:
-• Overall performance trends
-• Distribution of achievement levels
-• General observations
-
-STATISTICAL INSIGHTS:
-• Key metrics analysis
-• Performance patterns observed
-• Notable outliers or cases
-
-COMPARATIVE ANALYSIS:
-• High performers characteristics
-• Students needing support
-• Subject-wise variations
-• Performance correlations
-
-RESEARCH FINDINGS:
-• Significant observations
-• Potential factors affecting performance
-• Patterns worth investigating
-
-RECOMMENDATIONS:
-• Class-level interventions suggested
-• Differentiation strategies
-• Priority areas requiring attention
-
-Provide a thorough, research-quality analysis suitable for academic reporting. Use clean, plain text formatting."""
+Start analysis now."""
 
     else:
-        prompt = f"""You are an expert educational researcher analyzing student writing samples.
+        prompt = f"""Analyze this writing sample for research. Provide EXACTLY 5 sections:
 
-IMPORTANT FORMATTING RULES:
-- Write in plain text only
-- Use bullet points with • symbol for lists
-- Do NOT use **, *, __, #, or ``` markdown symbols
-- Write naturally without special formatting
+1. COMPLEXITY LEVEL:
+   • Vocabulary sophistication
+   • Sentence structure variety
+   • Argument depth
 
-Student Text Length: {len(student_data)} characters
+2. WRITING MATURITY:
+   • Academic development indicators
+   • Age-appropriate markers
 
-Provide a meta-analysis suitable for research:
+3. KEY THEMES:
+   • Main topics to explore
+   • Research potential
 
-CONTENT COMPLEXITY:
-• Vocabulary level assessment
-• Sentence structure analysis
-• Argumentation depth
+4. BENCHMARK:
+   • Estimated grade level
+   • Comparison to peers
 
-WRITING MATURITY:
-• Indicators of academic development
-• Sophistication markers
+5. TEACHING FOCUS:
+   • Skills to develop
+   • Learning priorities
 
-RESEARCH POTENTIAL:
-• Topics for further exploration
-• Themes worth investigating
+Format: Plain text, bullet points (•), no ** or *.
+Keep it to 250 words max.
 
-BENCHMARK ASSESSMENT:
-• Comparison to typical student writing
-• Grade level appropriateness
+Text length: {len(student_data)} characters
 
-PEDAGOGICAL IMPLICATIONS:
-• What this reveals about student learning
-• Teaching recommendations
-
-Focus on research-oriented insights. Use clean, plain text formatting."""
+Start analysis now."""
 
     return prompt
