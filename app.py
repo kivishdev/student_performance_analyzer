@@ -1,6 +1,6 @@
 import os
 import sys
-from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
+from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
 
 # Add the backend directory to the Python path
@@ -8,15 +8,13 @@ backend_path = os.path.join(os.path.dirname(__file__), 'backend')
 sys.path.insert(0, backend_path)
 
 # Import custom modules
-from modules.data_extractor import read_data
-from modules.gemini_analyzer import initialize_gemini, _create_analysis_prompt, _create_comparative_prompt
+from modules.data_extractor import read_data, get_chart_data
+from modules.gemini_analyzer import initialize_gemini, analyze_student_data, generate_comparative_analysis
 
 # --- Flask App Configuration ---
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = os.path.join(backend_path, 'data')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-# --- API Endpoints ---
 
 @app.route('/')
 def index():
@@ -32,9 +30,9 @@ def analyze_data():
 
     file = request.files.get('file')
     text_input = request.form.get('text_input')
-    # --- FIX: Read the analysis_type from the form ---
-    analysis_type = int(request.form.get('analysis_type', 3)) # Default to 3
+    analysis_type = int(request.form.get('analysis_type', 3))
     results = {}
+    chart_data = None
 
     try:
         data_source = None
@@ -43,6 +41,11 @@ def analyze_data():
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
             data_source = read_data(file_path)
+            
+            # Extract chart data if it's a dataframe
+            if data_source is not None:
+                chart_data = get_chart_data(data_source)
+                
             if data_source is None:
                 return jsonify({'error': 'Could not read or process the uploaded file.'}), 400
         elif text_input:
@@ -50,26 +53,22 @@ def analyze_data():
         else:
             return jsonify({'error': 'Please upload a file or enter text to analyze.'}), 400
 
-        # --- FIX: Conditional logic based on analysis_type ---
-        if analysis_type in [1, 3]: # Run for 'Individual' or 'Complete'
-            standard_prompt = _create_analysis_prompt(data_source)
-            results['standard'] = model.generate_content(standard_prompt).text
+        # --- Analysis Logic ---
+        if analysis_type in [1, 3]: # Individual or Complete
+            # Use the module function which already handles prompts
+            results['standard'] = analyze_student_data(data_source)
 
-        if analysis_type in [2, 3]: # Run for 'Comparative' or 'Complete'
-            # Comparative analysis is only applicable for structured data (not plain text)
+        if analysis_type in [2, 3]: # Comparative or Complete
             if not isinstance(data_source, str):
-                comparative_prompt = _create_comparative_prompt(data_source)
-                results['comparative'] = model.generate_content(comparative_prompt).text
-            else:
-                # If user asks for comparative on text, provide a message
-                if analysis_type == 2:
-                    results['comparative'] = "Comparative analysis is not applicable for plain text input."
+                results['comparative'] = generate_comparative_analysis(data_source)
+            elif analysis_type == 2:
+                results['comparative'] = "Comparative analysis is not applicable for plain text input."
         
-        # Ensure at least one result is present
         if not results:
-             return jsonify({'error': 'No analysis was generated for the selected type.'}), 400
+             return jsonify({'error': 'No analysis was generated.'}), 400
 
-        return jsonify(results), 200
+        # Return results AND chart data
+        return jsonify({"text_results": results, "chart_data": chart_data}), 200
 
     except Exception as e:
         return jsonify({"error": f"An error occurred during AI analysis: {e}"}), 500
@@ -87,28 +86,17 @@ def career_guide():
     
     user_message = data['message']
 
-    prompt = f"""You are an expert career counselor and academic advisor.
-    Based on the following student's description of their interests, skills, or academic marks, provide thoughtful and encouraging career guidance in clear, well-formatted paragraphs.
-
-    Your response should include:
-    1.  **Key Strengths Identification:** Briefly identify the core strengths from the text.
-    2.  **Top 3 Career Path Suggestions:** Suggest three distinct career paths that align with these strengths.
-    3.  **Detailed Rationale:** For each path, explain *why* it's a good fit.
-    4.  **Actionable Next Steps:** Provide 2-3 concrete next steps.
-
-    Student's Input:
-    ---
-    {user_message}
-    ---
+    prompt = f"""You are an expert career counselor.
+    Provide a helpful, encouraging response to this student inquiry.
+    Keep it concise (under 150 words) but actionable.
+    
+    Student: "{user_message}"
     """
     try:
         response = model.generate_content(prompt).text
         return jsonify({"response": response}), 200
     except Exception as e:
-        return jsonify({"error": f"An error occurred during AI analysis: {e}"}), 500
+        return jsonify({"error": f"Error: {e}"}), 500
 
-# --- Main Execution ---
 if __name__ == '__main__':
     app.run(debug=True)
-
-

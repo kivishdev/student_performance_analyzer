@@ -3,417 +3,348 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GenAI Student Performance Analyzer</title>
+    <title>Student Insights AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
         
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #020617;
-            color: #e2e8f0;
-            overflow-x: hidden;
+        body { font-family: 'Outfit', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .aurora-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+        .gradient-text {
+            background: linear-gradient(135deg, #2dd4bf 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .blob {
+            position: absolute;
+            filter: blur(80px);
             z-index: -1;
-            background: radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.15), transparent 35%),
-                        radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.15), transparent 35%),
-                        radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.1), transparent 30%);
-            animation: aurora 25s infinite linear;
+            opacity: 0.4;
+            animation: move 10s infinite alternate;
         }
+        @keyframes move { from { transform: translate(0,0); } to { transform: translate(50px, 50px); } }
 
-        @keyframes aurora {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-        .glass-card {
-            background: rgba(15, 23, 42, 0.65);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(51, 65, 85, 0.5);
-            transition: all 0.3s ease;
-        }
-
-        .tab-button.active { color: #5eead4; border-bottom-color: #5eead4; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.5s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        .prose h3 { color: #5eead4; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
-        .prose p { color: #94a3b8; }
-        .prose strong { color: #e2e8f0; }
-
-        .chat-message.user-message { background-color: #0e7490; color: white; margin-left: auto; }
-        .chat-message.ai-message { background-color: #1e293b; color: #cbd5e1; }
-
-        .option-card.selected { border-color: #5eead4; background-color: rgba(45, 212, 191, 0.1); transform: translateY(-2px); }
-        .option-card:not(.selected):hover { background-color: #1e293b; }
-
-        .fab { background: linear-gradient(to right, #14b8a6, #06b6d4); }
-        .fab:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 10px 20px rgba(13, 148, 136, 0.25); }
-        .fab:disabled { background: #334155; cursor: not-allowed; }
-
-        .new-feature-star { color: #facc15; animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.2); } }
-
-        .result-section {
-            opacity: 0;
-            transform: translateY(20px);
-            animation: slideUp 0.5s forwards ease-out;
-        }
-        @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+        /* Markdown Styles within Results */
+        .markdown-body h3 { font-size: 1.25rem; font-weight: 700; color: #5eead4; margin-top: 1.5rem; margin-bottom: 0.5rem; border-bottom: 1px solid #334155; padding-bottom: 0.25rem; }
+        .markdown-body p { margin-bottom: 0.75rem; color: #cbd5e1; line-height: 1.6; }
+        .markdown-body ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: #cbd5e1; }
+        .markdown-body strong { color: #f1f5f9; font-weight: 600; }
+        .markdown-body li { margin-bottom: 0.25rem; }
     </style>
 </head>
-<body class="pb-20 lg:pb-0">
-    <div class="aurora-bg"></div>
+<body class="h-screen overflow-hidden flex flex-col">
 
-    <div class="container mx-auto px-4 py-8">
-        <header class="text-center mb-12">
-            <h1 class="text-4xl md:text-5xl font-bold text-white">Student Performance Analyzer</h1>
-            <p class="mt-3 text-lg text-teal-300">AI-Powered Insights for Academic & Career Growth</p>
-        </header>
+    <!-- Background Effects -->
+    <div class="blob bg-purple-600 w-96 h-96 rounded-full top-0 left-0"></div>
+    <div class="blob bg-teal-600 w-96 h-96 rounded-full bottom-0 right-0"></div>
 
-        <div class="lg:grid lg:grid-cols-2 lg:gap-8">
-            <!-- Left Column: Input Panel -->
-            <main class="glass-card rounded-2xl shadow-2xl p-6 md:p-8">
-                <div class="hidden lg:block border-b border-slate-700 mb-6">
-                    <nav class="flex space-x-8" aria-label="Tabs">
-                        <button id="tab-btn-analyzer-desktop" onclick="switchTab('analyzer')" class="tab-button active pb-3 px-1 border-b-2 font-medium text-sm">
-                            <i class="fas fa-chart-bar mr-2"></i> Performance Analyzer
-                        </button>
-                        <button id="tab-btn-career-desktop" onclick="switchTab('career')" class="tab-button pb-3 px-1 border-b-2 font-medium text-sm text-slate-400">
-                            <i class="fas fa-briefcase mr-2"></i> AI Career Guide <i class="fas fa-star new-feature-star text-xs"></i>
-                        </button>
-                    </nav>
-                </div>
-
-                <div id="main-content-container">
-                    <div id="tab-content-analyzer" class="tab-content active space-y-8">
-                        <div class="flex items-center space-x-4">
-                            <div class="flex items-center justify-center h-10 w-10 rounded-full bg-slate-700 text-teal-300 font-bold text-lg">1</div>
-                            <div>
-                                <h2 class="font-bold text-xl text-slate-200">Provide Data Source</h2>
-                                <p class="text-sm text-slate-400">Upload a file or paste text to begin.</p>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div id="drop-zone" class="flex flex-col items-center justify-center w-full p-6 border-2 border-slate-600 border-dashed rounded-lg cursor-pointer hover:border-teal-400 transition bg-slate-900/50">
-                                <i class="fas fa-cloud-upload-alt text-3xl text-slate-500 mb-2"></i>
-                                <span class="font-medium text-teal-400 text-sm">Upload File</span>
-                                <p id="file-name-display" class="text-xs text-slate-500 mt-1">or drag & drop</p>
-                                <input id="file-upload" name="file" type="file" class="sr-only">
-                            </div>
-                            <textarea id="text_input" name="text_input" rows="5" class="w-full sm:text-sm rounded-lg p-3 focus:outline-none border border-slate-700 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 bg-slate-900/50" placeholder="Or paste text here...&#10;e.g.,&#10;Math: 85, Science: 92&#10;Or an essay for analysis."></textarea>
-                        </div>
-                        
-                        <div class="flex items-center space-x-4">
-                            <div class="flex items-center justify-center h-10 w-10 rounded-full bg-slate-700 text-teal-300 font-bold text-lg">2</div>
-                            <h2 class="font-bold text-xl text-slate-200">Select Analysis Type</h2>
-                        </div>
-                        <div id="analysis-options" class="grid grid-cols-3 gap-4">
-                            <div class="option-card border border-slate-700 rounded-lg p-4 cursor-pointer text-center" onclick="selectOption(this, '1')">
-                                <i class="fas fa-user text-blue-400 text-2xl mb-2"></i><h3 class="font-medium text-slate-200 text-sm">Individual</h3>
-                            </div>
-                            <div class="option-card border border-slate-700 rounded-lg p-4 cursor-pointer text-center" onclick="selectOption(this, '2')">
-                                <i class="fas fa-users text-purple-400 text-2xl mb-2"></i><h3 class="font-medium text-slate-200 text-sm">Comparative</h3>
-                            </div>
-                            <div class="option-card border border-slate-700 rounded-lg p-4 cursor-pointer selected text-center" onclick="selectOption(this, '3')">
-                                <i class="fas fa-layer-group text-teal-400 text-2xl mb-2"></i><h3 class="font-medium text-slate-200 text-sm">Complete</h3>
-                            </div>
-                            <input type="hidden" name="analysis_type" id="analysis_type_input" value="3">
-                        </div>
-                        
-                        <div class="pt-4">
-                            <button id="generate-btn" class="fab w-full inline-flex items-center justify-center px-8 py-4 border border-transparent text-base font-medium rounded-full shadow-lg text-white" disabled>
-                                <i id="btn-icon" class="fas fa-arrow-up mr-3"></i> <span id="btn-text">Provide a Data Source</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="tab-content-career" class="tab-content">
-                         <div class="space-y-6">
-                            <div>
-                                <h2 class="font-bold text-xl text-slate-200">AI Career Guide <i class="fas fa-star new-feature-star text-xs"></i></h2>
-                                <p class="text-sm text-slate-400 mt-1">Get started with a preset, or ask your own question.</p>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-4">
-                                    <div class="glass-card rounded-lg p-4 cursor-pointer transition border border-slate-700 hover:border-teal-400" onclick="handlePresetClick('Based on my high grades in Math and Physics, what are some suitable engineering career paths?')">
-                                        <h4 class="font-semibold text-slate-200">Career Paths</h4>
-                                    </div>
-                                    <div class="glass-card rounded-lg p-4 cursor-pointer transition border border-slate-700 hover:border-teal-400" onclick="handlePresetClick('I enjoy creative writing but struggle with deadlines. What careers fit this profile and how can I improve?')">
-                                        <h4 class="font-semibold text-slate-200">Skills & Improvement</h4>
-                                    </div>
-                                </div>
-                            </div>
-                            <div id="chat-container" class="rounded-lg overflow-hidden flex flex-col h-96 bg-slate-900/50 border border-slate-700">
-                                <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-4">
-                                    <div class="chat-message ai-message p-3 rounded-lg">
-                                        <p class="font-semibold text-teal-400">AI Counselor</p>
-                                        <p>Hello! How can I help you explore your future career path today?</p>
-                                    </div>
-                                </div>
-                                <div class="p-2 border-t border-slate-700">
-                                    <form id="career-form" class="flex items-center">
-                                        <input type="text" id="career-input" class="flex-1 p-3 bg-transparent border-none focus:ring-0 text-slate-200" placeholder="Type your message..." autocomplete="off">
-                                        <button type="submit" class="w-12 h-12 flex items-center justify-center bg-teal-600 text-white rounded-full hover:bg-teal-700 transition"><i class="fas fa-paper-plane"></i></button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </main>
-
-            <!-- Right Column (Desktop Only): Output Panel -->
-            <section id="results-section" class="glass-card rounded-2xl shadow-2xl p-6 md:p-8 hidden lg:block">
-                 <div id="results-content-desktop" class="h-full flex flex-col relative z-10 overflow-y-auto">
-                     <div class="flex-grow flex items-center justify-center text-center">
-                         <div>
-                             <i class="fas fa-lightbulb text-6xl text-slate-700"></i>
-                             <p class="mt-4 text-lg font-medium text-slate-500">Your analysis results will appear here.</p>
-                         </div>
-                     </div>
-                 </div>
-            </section>
+    <!-- Header -->
+    <nav class="glass z-50 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <i class="fas fa-brain text-2xl text-teal-400"></i>
+            <h1 class="text-2xl font-bold tracking-tight">Student<span class="gradient-text">Insights</span></h1>
         </div>
-    </div>
-
-    <!-- Bottom Navigation (Mobile Only) -->
-    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/80 backdrop-blur-md border-t border-slate-700 h-16 z-40">
-        <div class="flex h-full">
-            <button id="nav-btn-analyzer" onclick="switchTab('analyzer')" class="nav-button active flex-1 flex flex-col items-center justify-center text-slate-400">
-                <i class="fas fa-chart-bar text-xl"></i>
-                <span class="text-xs mt-1">Analyzer</span>
-            </button>
-            <button id="nav-btn-career" onclick="switchTab('career')" class="nav-button flex-1 flex flex-col items-center justify-center text-slate-400">
-                <i class="fas fa-briefcase text-xl"></i>
-                <span class="text-xs mt-1">Career Guide</span>
-            </button>
+        <div class="flex gap-4">
+            <button onclick="setTab('analyze')" class="px-4 py-2 rounded-lg hover:bg-slate-700/50 transition font-medium text-teal-400 border border-teal-500/30">Analyzer</button>
+            <button onclick="setTab('career')" class="px-4 py-2 rounded-lg hover:bg-slate-700/50 transition font-medium text-slate-400 hover:text-white">Career AI</button>
         </div>
     </nav>
 
-    <!-- Full Screen Results Modal (Mobile Only) -->
-    <div id="results-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex flex-col p-4 hidden z-50 lg:hidden">
-        <div class="glass-card rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col flex-1">
-            <header class="p-4 border-b border-slate-700 flex justify-between items-center">
-                <h2 class="text-xl font-bold text-slate-200">Analysis Results</h2>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
-            </header>
-            <div id="results-content-mobile" class="p-6 overflow-y-auto">
-                <!-- Content will be injected here -->
+    <!-- Main Content -->
+    <main class="flex-1 flex overflow-hidden relative">
+        
+        <!-- Left Panel: Controls -->
+        <div id="analyze-panel" class="w-full md:w-1/3 p-6 flex flex-col gap-6 overflow-y-auto border-r border-slate-700 bg-slate-900/50">
+            
+            <div class="space-y-2">
+                <h2 class="text-xl font-semibold text-white">1. Input Data</h2>
+                <p class="text-sm text-slate-400">Upload a grade sheet (CSV/Excel) or paste text.</p>
+                
+                <div class="border-2 border-dashed border-slate-600 rounded-xl p-6 text-center hover:border-teal-500 hover:bg-slate-800/50 transition cursor-pointer relative group">
+                    <input type="file" id="fileInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".csv,.xlsx,.xls,.txt">
+                    <i class="fas fa-cloud-upload-alt text-3xl text-slate-500 group-hover:text-teal-400 mb-2 transition"></i>
+                    <p id="fileName" class="text-sm font-medium text-slate-300">Drop file or click to upload</p>
+                </div>
+                
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-700"></div></div>
+                    <div class="relative flex justify-center text-xs uppercase"><span class="bg-slate-900 px-2 text-slate-500">Or</span></div>
+                </div>
+
+                <textarea id="textInput" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition h-32" placeholder="Paste essay, report, or notes here..."></textarea>
+            </div>
+
+            <div class="space-y-2">
+                <h2 class="text-xl font-semibold text-white">2. Analysis Mode</h2>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="selectMode(1, this)" class="mode-btn p-3 rounded-lg border border-slate-600 hover:border-teal-500 bg-slate-800/50 text-sm font-medium transition text-center">
+                        <i class="fas fa-user block mb-1"></i> Individual
+                    </button>
+                    <button onclick="selectMode(2, this)" class="mode-btn p-3 rounded-lg border border-slate-600 hover:border-teal-500 bg-slate-800/50 text-sm font-medium transition text-center">
+                        <i class="fas fa-users block mb-1"></i> Class
+                    </button>
+                    <button onclick="selectMode(3, this)" class="mode-btn active ring-2 ring-teal-500 bg-teal-500/10 p-3 rounded-lg border border-teal-500 text-sm font-medium transition text-center text-teal-300">
+                        <i class="fas fa-layer-group block mb-1"></i> Both
+                    </button>
+                </div>
+                <input type="hidden" id="analysisType" value="3">
+            </div>
+
+            <button id="generateBtn" class="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-400 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-teal-500/20 transition transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                <span>Generate Analysis</span> <i class="fas fa-bolt"></i>
+            </button>
+        </div>
+
+        <!-- Right Panel: Results -->
+        <div class="flex-1 bg-slate-900/30 p-6 overflow-y-auto relative" id="results-container">
+            
+            <!-- Empty State -->
+            <div id="empty-state" class="h-full flex flex-col items-center justify-center text-slate-500 opacity-60">
+                <i class="fas fa-microchip text-6xl mb-4 animate-pulse"></i>
+                <p class="text-lg">AI is ready to crunch numbers.</p>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="hidden h-full flex flex-col items-center justify-center">
+                <div class="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p class="text-teal-400 animate-pulse font-medium">Analyzing patterns...</p>
+            </div>
+
+            <!-- Content State -->
+            <div id="content-state" class="hidden space-y-6 max-w-4xl mx-auto pb-20">
+                
+                <!-- Tools Bar -->
+                <div class="flex justify-end gap-2 mb-4">
+                    <button onclick="downloadReport()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded text-sm transition"><i class="fas fa-download mr-1"></i> Save Report</button>
+                    <button onclick="copyResults()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded text-sm transition"><i class="fas fa-copy mr-1"></i> Copy</button>
+                </div>
+
+                <!-- Charts Section -->
+                <div id="chart-section" class="hidden glass rounded-2xl p-6">
+                    <h3 class="text-lg font-bold text-teal-400 mb-4 flex items-center"><i class="fas fa-chart-pie mr-2"></i> Class Performance Overview</h3>
+                    <div class="relative h-64 w-full">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Text Results -->
+                <div id="standard-result" class="glass rounded-2xl p-8 markdown-body hidden"></div>
+                <div id="comparative-result" class="glass rounded-2xl p-8 markdown-body hidden border-t-4 border-purple-500"></div>
             </div>
         </div>
-    </div>
 
-<script>
-    const navButtons = {
-        analyzer: document.getElementById('nav-btn-analyzer'),
-        career: document.getElementById('nav-btn-career'),
-    };
-     const desktopNavButtons = {
-        analyzer: document.getElementById('tab-btn-analyzer-desktop'),
-        career: document.getElementById('tab-btn-career-desktop'),
-    };
-    const tabContents = {
-        analyzer: document.getElementById('tab-content-analyzer'),
-        career: document.getElementById('tab-content-career'),
-    };
-    
-    function switchTab(tabName) {
-        const isMobile = window.innerWidth < 1024;
-        const currentNavs = isMobile ? navButtons : desktopNavButtons;
-
-        Object.values(currentNavs).forEach(btn => btn.classList.remove('active', 'text-teal-300'));
-        if(isMobile) Object.values(currentNavs).forEach(btn => btn.classList.add('text-slate-400'));
-        else Object.values(currentNavs).forEach(btn => btn.classList.add('text-slate-400'));
-        
-        Object.values(tabContents).forEach(content => content.classList.remove('active'));
-        
-        currentNavs[tabName].classList.add('active', 'text-teal-300');
-        currentNavs[tabName].classList.remove('text-slate-400');
-        tabContents[tabName].classList.add('active');
-    }
-    
-    function handlePresetClick(question) {
-        const careerInput = document.getElementById('career-input');
-        careerInput.value = question;
-        careerInput.focus();
-        if(window.innerWidth < 1024) { // On mobile, switch to tab first
-            switchTab('career');
-        }
-    }
-
-    const generateBtn = document.getElementById('generate-btn');
-    const btnIcon = document.getElementById('btn-icon');
-    const btnText = document.getElementById('btn-text');
-    const fileInput = document.getElementById('file-upload');
-    const textInput = document.getElementById('text_input');
-
-    function updateButtonState() {
-        if (fileInput.files.length > 0 || textInput.value.trim() !== '') {
-            generateBtn.disabled = false;
-            btnIcon.className = 'fas fa-cogs mr-3';
-            btnText.textContent = 'Generate Analysis';
-        } else {
-            generateBtn.disabled = true;
-            btnIcon.className = 'fas fa-arrow-up mr-3';
-            btnText.textContent = 'Provide a Data Source';
-        }
-    }
-
-    fileInput.addEventListener('change', updateButtonState);
-    textInput.addEventListener('input', updateButtonState);
-
-    const dropZone = document.getElementById('drop-zone');
-    const fileNameDisplay = document.getElementById('file-name-display');
-
-    dropZone.onclick = () => fileInput.click();
-    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('border-teal-400', 'bg-slate-700'); };
-    dropZone.ondragleave = () => dropZone.classList.remove('border-teal-400', 'bg-slate-700');
-    dropZone.ondrop = (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('border-teal-400', 'bg-slate-700');
-        if (e.dataTransfer.files.length) {
-            fileInput.files = e.dataTransfer.files;
-            fileNameDisplay.textContent = e.dataTransfer.files[0].name;
-            fileNameDisplay.classList.add('text-green-400');
-            updateButtonState();
-        }
-    };
-
-    function selectOption(element, value) {
-        document.querySelectorAll('.option-card').forEach(card => card.classList.remove('selected'));
-        element.classList.add('selected');
-        document.getElementById('analysis_type_input').value = value;
-    }
-
-    const resultsModal = document.getElementById('results-modal');
-    function closeModal() {
-        resultsModal.classList.add('hidden');
-    }
-
-    const careerForm = document.getElementById('career-form');
-    const resultsContentDesktop = document.getElementById('results-content-desktop');
-    const resultsContentMobile = document.getElementById('results-content-mobile');
-    const chatMessages = document.getElementById('chat-messages');
-
-    generateBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        const formData = new FormData();
-        formData.append('file', fileInput.files[0] || new File([], ''));
-        formData.append('text_input', textInput.value);
-        formData.append('analysis_type', document.getElementById('analysis_type_input').value);
-
-        showLoading();
-        
-        try {
-            const response = await fetch('/api/analyze', {
-                method: 'POST',
-                body: formData
-            });
-            const results = await response.json();
-            if (!response.ok) throw new Error(results.error || 'An unknown error occurred.');
-            displayAnalysisResults(results);
-        } catch (error) {
-            displayError(error.message);
-        }
-    });
-
-    careerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const input = document.getElementById('career-input');
-        const message = input.value.trim();
-        if (!message) return;
-
-        addChatMessage(message, 'user');
-        input.value = '';
-        
-        try {
-            const response = await fetch('/api/career-guide', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message })
-            });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.error || 'An unknown error occurred.');
-            addChatMessage(result.response, 'ai');
-        } catch (error) {
-            addChatMessage(`Sorry, I encountered an error: ${error.message}`, 'ai');
-        }
-    });
-
-    function showLoading() {
-        const loadingHTML = `<div class="h-full flex items-center justify-center text-center">
-            <div>
-                <i class="fas fa-spinner fa-spin text-teal-400 text-4xl"></i>
-                <p class="mt-4 text-lg font-medium text-slate-400">Generating insights...</p>
+        <!-- Career Chat Interface (Hidden by default) -->
+        <div id="career-panel" class="hidden w-full flex-1 flex flex-col max-w-4xl mx-auto p-6">
+            <div id="chat-box" class="flex-1 glass rounded-2xl p-6 overflow-y-auto space-y-4 mb-4">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center"><i class="fas fa-robot text-white text-xs"></i></div>
+                    <div class="bg-slate-800 p-3 rounded-lg rounded-tl-none max-w-[80%] text-slate-200">
+                        Hello! I'm your AI Career Counselor. Tell me about your grades, interests, or favorite subjects, and I'll suggest some paths for you.
+                    </div>
+                </div>
             </div>
-        </div>`;
-        resultsContentDesktop.innerHTML = loadingHTML;
-        resultsContentMobile.innerHTML = loadingHTML;
-        if(window.innerWidth < 1024) {
-            resultsModal.classList.remove('hidden');
-        }
-    }
+            <form id="chat-form" class="flex gap-2">
+                <input type="text" id="chat-input" class="flex-1 bg-slate-800 border-slate-700 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-500 outline-none text-white" placeholder="E.g., I'm good at Math but hate coding...">
+                <button type="submit" class="bg-teal-600 hover:bg-teal-500 text-white px-6 py-3 rounded-xl font-medium transition"><i class="fas fa-paper-plane"></i></button>
+            </form>
+        </div>
 
-    function displayError(errorMessage) {
-        const errorHTML = `<div class="bg-red-900/50 border-l-4 border-red-500 text-red-300 p-4 rounded-md">
-            <h3 class="font-bold">Error</h3>
-            <p>${errorMessage}</p>
-        </div>`;
-        resultsContentDesktop.innerHTML = errorHTML;
-        resultsContentMobile.innerHTML = errorHTML;
-        if(window.innerWidth < 1024) {
-            resultsModal.classList.remove('hidden');
-        }
-    }
+    </main>
 
-    function displayAnalysisResults(results) {
-        let html = '<div class="prose prose-invert max-w-none">';
-        if (results.standard) {
-            html += `
-                <div class="result-section" style="animation-delay: 100ms;">
-                    <h3><i class="fas fa-user-graduate mr-2 text-blue-400"></i>Individual Analysis</h3>
-                    <p>${results.standard.replace(/\n/g, '<br>')}</p>
-                </div>`;
+    <script>
+        // --- UI Logic ---
+        function setTab(tab) {
+            if(tab === 'analyze') {
+                document.getElementById('analyze-panel').classList.remove('hidden');
+                document.getElementById('results-container').classList.remove('hidden');
+                document.getElementById('career-panel').classList.add('hidden');
+                // Adjust layout for mobile
+                if(window.innerWidth < 768) document.getElementById('analyze-panel').style.display = 'flex';
+            } else {
+                document.getElementById('analyze-panel').classList.add('hidden');
+                if(window.innerWidth < 768) document.getElementById('analyze-panel').style.display = 'none';
+                document.getElementById('results-container').classList.add('hidden');
+                document.getElementById('career-panel').classList.remove('hidden');
+                document.getElementById('career-panel').classList.add('flex');
+            }
         }
-        if (results.comparative) {
-             html += `
-                <div class="result-section mt-8" style="animation-delay: 300ms;">
-                    <h3><i class="fas fa-users mr-2 text-purple-400"></i>Comparative Analysis</h3>
-                    <p>${results.comparative.replace(/\n/g, '<br>')}</p>
-                </div>`;
+
+        function selectMode(type, btn) {
+            document.querySelectorAll('.mode-btn').forEach(b => {
+                b.classList.remove('active', 'ring-2', 'ring-teal-500', 'bg-teal-500/10', 'text-teal-300', 'border-teal-500');
+                b.classList.add('border-slate-600', 'text-slate-400');
+            });
+            btn.classList.add('active', 'ring-2', 'ring-teal-500', 'bg-teal-500/10', 'text-teal-300', 'border-teal-500');
+            btn.classList.remove('border-slate-600', 'text-slate-400');
+            document.getElementById('analysisType').value = type;
         }
-        html += '</div>';
-        
-        resultsContentDesktop.innerHTML = html;
-        resultsContentMobile.innerHTML = html;
 
-        if(window.innerWidth < 1024) {
-            resultsModal.classList.remove('hidden');
+        const fileInput = document.getElementById('fileInput');
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                document.getElementById('fileName').innerText = e.target.files[0].name;
+                document.getElementById('fileName').classList.add('text-teal-400');
+                document.getElementById('generateBtn').disabled = false;
+            }
+        });
+
+        document.getElementById('textInput').addEventListener('input', (e) => {
+            document.getElementById('generateBtn').disabled = e.target.value.length === 0 && fileInput.files.length === 0;
+        });
+
+        // --- Analysis Logic ---
+        let myChart = null;
+
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0] || '');
+            formData.append('text_input', document.getElementById('textInput').value);
+            formData.append('analysis_type', document.getElementById('analysisType').value);
+
+            // UI Updates
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('content-state').classList.add('hidden');
+            document.getElementById('loading-state').classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/analyze', { method: 'POST', body: formData });
+                const data = await response.json();
+
+                if (data.error) throw new Error(data.error);
+
+                // Render Content
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('content-state').classList.remove('hidden');
+
+                const stdDiv = document.getElementById('standard-result');
+                const cmpDiv = document.getElementById('comparative-result');
+
+                if (data.text_results.standard) {
+                    stdDiv.innerHTML = marked.parse(data.text_results.standard);
+                    stdDiv.classList.remove('hidden');
+                } else stdDiv.classList.add('hidden');
+
+                if (data.text_results.comparative) {
+                    cmpDiv.innerHTML = marked.parse(data.text_results.comparative);
+                    cmpDiv.classList.remove('hidden');
+                } else cmpDiv.classList.add('hidden');
+
+                // Render Chart
+                const chartSection = document.getElementById('chart-section');
+                if (data.chart_data) {
+                    chartSection.classList.remove('hidden');
+                    renderChart(data.chart_data);
+                } else {
+                    chartSection.classList.add('hidden');
+                }
+
+            } catch (err) {
+                document.getElementById('loading-state').classList.add('hidden');
+                alert("Analysis failed: " + err.message);
+                document.getElementById('empty-state').classList.remove('hidden');
+            }
+        });
+
+        function renderChart(chartData) {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            if (myChart) myChart.destroy();
+
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Average Score',
+                        data: chartData.values,
+                        backgroundColor: 'rgba(94, 234, 212, 0.5)',
+                        borderColor: '#2dd4bf',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
         }
-    }
 
-    function addChatMessage(message, sender) {
-        const messageEl = document.createElement('div');
-        messageEl.classList.add('chat-message', `${sender}-message`, 'p-3', 'rounded-lg', 'shadow-sm');
-        messageEl.innerHTML = sender === 'ai' 
-            ? `<p class="font-semibold text-teal-400">AI Counselor</p><p>${message.replace(/\n/g, '<br>')}</p>`
-            : `<p>${message}</p>`;
-        chatMessages.appendChild(messageEl);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
+        // --- Chat Logic ---
+        document.getElementById('chat-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (!msg) return;
 
-    // Initialize button state
-    updateButtonState();
-</script>
+            addMsg(msg, 'user');
+            input.value = '';
+
+            try {
+                const res = await fetch('/api/career-guide', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: msg})
+                });
+                const data = await res.json();
+                addMsg(data.response || data.error, 'ai');
+            } catch (err) {
+                addMsg("Sorry, I couldn't connect.", 'ai');
+            }
+        });
+
+        function addMsg(text, type) {
+            const box = document.getElementById('chat-box');
+            const div = document.createElement('div');
+            div.className = `flex items-start gap-3 ${type === 'user' ? 'flex-row-reverse' : ''}`;
+            
+            const avatar = type === 'ai' 
+                ? '<div class="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0"><i class="fas fa-robot text-white text-xs"></i></div>'
+                : '<div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0"><i class="fas fa-user text-white text-xs"></i></div>';
+            
+            const bubble = `<div class="${type === 'ai' ? 'bg-slate-800 text-slate-200' : 'bg-blue-600 text-white'} p-3 rounded-lg ${type === 'ai' ? 'rounded-tl-none' : 'rounded-tr-none'} max-w-[80%] text-sm leading-relaxed">${text}</div>`;
+            
+            div.innerHTML = avatar + bubble;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        // --- Utilities ---
+        function downloadReport() {
+            const content = document.getElementById('standard-result').innerText + "\n\n" + document.getElementById('comparative-result').innerText;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Student_Analysis_${new Date().toISOString().slice(0,10)}.txt`;
+            a.click();
+        }
+
+        function copyResults() {
+            const content = document.getElementById('standard-result').innerText;
+            navigator.clipboard.writeText(content);
+            alert("Analysis copied to clipboard!");
+        }
+    </script>
 </body>
 </html>
-
