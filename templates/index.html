@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Student Insights AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -14,9 +14,9 @@
         body { font-family: 'Outfit', sans-serif; background-color: #0f172a; color: #f8fafc; }
         
         .glass {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .gradient-text {
@@ -27,323 +27,431 @@
 
         .blob {
             position: absolute;
-            filter: blur(80px);
+            filter: blur(90px);
             z-index: -1;
-            opacity: 0.4;
-            animation: move 10s infinite alternate;
+            opacity: 0.3;
+            animation: move 12s infinite alternate;
         }
-        @keyframes move { from { transform: translate(0,0); } to { transform: translate(50px, 50px); } }
+        @keyframes move { from { transform: translate(0,0); } to { transform: translate(40px, 40px); } }
 
-        /* Custom Scrollbar */
+        /* Enhanced Scrollbar for PC */
         ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; border: 2px solid rgba(30, 41, 59, 0.5); }
         ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-        /* Markdown Styles within Results */
-        .markdown-body h3 { font-size: 1.25rem; font-weight: 700; color: #5eead4; margin-top: 1.5rem; margin-bottom: 0.5rem; border-bottom: 1px solid #334155; padding-bottom: 0.25rem; }
-        .markdown-body p { margin-bottom: 0.75rem; color: #cbd5e1; line-height: 1.6; }
-        .markdown-body ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: #cbd5e1; }
-        .markdown-body strong { color: #f1f5f9; font-weight: 600; }
-        .markdown-body li { margin-bottom: 0.25rem; }
+        /* Mobile specific adjustments */
+        .mobile-height { height: 100dvh; }
+        
+        .markdown-body h3 { color: #5eead4; font-weight: 700; margin-top: 1rem; margin-bottom: 0.5rem; font-size: 1.1rem; }
+        .markdown-body ul { list-style: disc; padding-left: 1.2rem; color: #cbd5e1; }
+        .markdown-body strong { color: white; }
+        
+        .mode-btn { transition: all 0.2s; }
+        .mode-btn.active { background-color: rgba(45, 212, 191, 0.15); border-color: #2dd4bf; color: #5eead4; }
+        .mode-btn:not(.active) { background-color: rgba(30, 41, 59, 0.5); border-color: #475569; color: #94a3b8; }
+        .mode-btn:not(.active):hover { border-color: #2dd4bf; }
+
+        /* Popup Animation */
+        .modal-enter { animation: modalIn 0.3s ease-out forwards; }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
     </style>
 </head>
-<body class="h-screen overflow-hidden flex flex-col">
+<body class="mobile-height flex flex-col overflow-hidden">
 
-    <!-- Background Effects -->
-    <div class="blob bg-purple-600 w-96 h-96 rounded-full top-0 left-0"></div>
-    <div class="blob bg-teal-600 w-96 h-96 rounded-full bottom-0 right-0"></div>
+    <!-- Background -->
+    <div class="blob bg-purple-600 w-80 h-80 rounded-full top-0 left-0"></div>
+    <div class="blob bg-teal-600 w-80 h-80 rounded-full bottom-0 right-0"></div>
 
     <!-- Header -->
-    <nav class="glass z-50 px-6 py-4 flex justify-between items-center">
-        <div class="flex items-center gap-3">
-            <i class="fas fa-brain text-2xl text-teal-400"></i>
-            <h1 class="text-2xl font-bold tracking-tight">Student<span class="gradient-text">Insights</span></h1>
+    <nav class="glass z-50 px-4 py-3 flex justify-between items-center shadow-lg shrink-0">
+        <div class="flex items-center gap-2">
+            <i class="fas fa-brain text-xl text-teal-400"></i>
+            <h1 class="text-xl font-bold tracking-tight">Student<span class="gradient-text">Insights</span></h1>
         </div>
-        <div class="flex gap-4">
-            <button onclick="setTab('analyze')" class="px-4 py-2 rounded-lg hover:bg-slate-700/50 transition font-medium text-teal-400 border border-teal-500/30">Analyzer</button>
-            <button onclick="setTab('career')" class="px-4 py-2 rounded-lg hover:bg-slate-700/50 transition font-medium text-slate-400 hover:text-white">Career AI</button>
+        
+        <div class="flex gap-2 bg-slate-800/50 p-1 rounded-lg">
+            <button onclick="switchTab('analyze')" id="tab-analyze" class="px-3 py-1.5 rounded-md text-sm font-medium transition bg-slate-700 text-white shadow">Analyze</button>
+            <button onclick="switchTab('career')" id="tab-career" class="px-3 py-1.5 rounded-md text-sm font-medium transition text-slate-400 hover:text-white">Career</button>
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="flex-1 flex overflow-hidden relative">
+    <!-- Main Content Area -->
+    <main class="flex-1 relative overflow-hidden flex flex-col md:flex-row min-h-0">
         
-        <!-- Left Panel: Controls -->
-        <div id="analyze-panel" class="w-full md:w-1/3 p-6 flex flex-col gap-6 overflow-y-auto border-r border-slate-700 bg-slate-900/50">
+        <!-- SECTION 1: ANALYZER -->
+        <div id="panel-analyze" class="w-full h-full flex flex-col md:flex-row transition-all duration-300">
             
-            <div class="space-y-2">
-                <h2 class="text-xl font-semibold text-white">1. Input Data</h2>
-                <p class="text-sm text-slate-400">Upload a grade sheet (CSV/Excel) or paste text.</p>
-                
-                <div class="border-2 border-dashed border-slate-600 rounded-xl p-6 text-center hover:border-teal-500 hover:bg-slate-800/50 transition cursor-pointer relative group">
-                    <input type="file" id="fileInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".csv,.xlsx,.xls,.txt">
-                    <i class="fas fa-cloud-upload-alt text-3xl text-slate-500 group-hover:text-teal-400 mb-2 transition"></i>
-                    <p id="fileName" class="text-sm font-medium text-slate-300">Drop file or click to upload</p>
-                </div>
-                
-                <div class="relative">
-                    <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-700"></div></div>
-                    <div class="relative flex justify-center text-xs uppercase"><span class="bg-slate-900 px-2 text-slate-500">Or</span></div>
+            <!-- Input Column -->
+            <div class="w-full md:w-1/3 p-4 md:p-6 flex flex-col gap-4 overflow-y-auto border-r border-slate-700 bg-slate-900/60 z-20 shrink-0 custom-scroll">
+                <div class="space-y-3">
+                    <h2 class="text-lg font-semibold text-white flex items-center gap-2"><i class="fas fa-file-import text-teal-400"></i> Data Source</h2>
+                    
+                    <div class="border-2 border-dashed border-slate-600 rounded-xl p-6 text-center hover:border-teal-500 hover:bg-slate-800/50 transition cursor-pointer relative group">
+                        <input type="file" id="fileInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".csv,.xlsx,.xls,.txt,.pdf">
+                        <i class="fas fa-cloud-upload-alt text-2xl text-slate-500 group-hover:text-teal-400 mb-2 transition"></i>
+                        <p id="fileName" class="text-sm font-medium text-slate-300">Upload PDF, Excel, CSV</p>
+                        <p class="text-xs text-slate-500 mt-1">Supports Marks sheets & Resumes</p>
+                    </div>
+
+                    <div class="text-center text-xs text-slate-500 uppercase tracking-wider font-semibold">- OR -</div>
+
+                    <textarea id="textInput" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition h-20 resize-none" placeholder="Enter Marks in Text Here...
+                    For ex: John doe
+                    Maths: 90/100"></textarea>
                 </div>
 
-                <textarea id="textInput" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition h-32" placeholder="Paste essay, report, or notes here..."></textarea>
+                <div class="space-y-2">
+                    <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wide">Analysis Mode</h2>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="selectMode(1, this)" class="mode-btn p-3 rounded-lg border text-sm font-medium flex flex-col items-center justify-center gap-1">
+                            <i class="fas fa-user"></i> Individual
+                        </button>
+                        <button onclick="selectMode(2, this)" class="mode-btn p-3 rounded-lg border text-sm font-medium flex flex-col items-center justify-center gap-1">
+                            <i class="fas fa-users"></i> Comparative
+                        </button>
+                        <button onclick="selectMode(3, this)" class="mode-btn active p-3 rounded-lg border text-sm font-medium flex flex-col items-center justify-center gap-1">
+                            <i class="fas fa-layer-group"></i> Both
+                        </button>
+                        <button onclick="selectMode(4, this)" class="mode-btn p-3 rounded-lg border text-sm font-medium flex flex-col items-center justify-center gap-1">
+                            <i class="fas fa-file-invoice"></i> Resume / CV
+                        </button>
+                    </div>
+                    <input type="hidden" id="analysisType" value="3">
+                </div>
+
+                <div class="mt-auto pt-4 pb-20 md:pb-0">
+                    <button id="generateBtn" class="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-400 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-teal-500/20 transition transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span>Analyze Data</span> <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
             </div>
 
-            <div class="space-y-2">
-                <h2 class="text-xl font-semibold text-white">2. Analysis Mode</h2>
-                <div class="grid grid-cols-3 gap-2">
-                    <button onclick="selectMode(1, this)" class="mode-btn p-3 rounded-lg border border-slate-600 hover:border-teal-500 bg-slate-800/50 text-sm font-medium transition text-center">
-                        <i class="fas fa-user block mb-1"></i> Individual
-                    </button>
-                    <button onclick="selectMode(2, this)" class="mode-btn p-3 rounded-lg border border-slate-600 hover:border-teal-500 bg-slate-800/50 text-sm font-medium transition text-center">
-                        <i class="fas fa-users block mb-1"></i> Class
-                    </button>
-                    <button onclick="selectMode(3, this)" class="mode-btn active ring-2 ring-teal-500 bg-teal-500/10 p-3 rounded-lg border border-teal-500 text-sm font-medium transition text-center text-teal-300">
-                        <i class="fas fa-layer-group block mb-1"></i> Both
-                    </button>
+            <!-- Results Column (Scroll Fix: h-full + overflow-y-auto) -->
+            <div class="flex-1 bg-slate-900/30 p-4 md:p-6 overflow-y-auto relative min-h-0 h-full custom-scroll" id="results-area">
+                <div id="state-empty" class="h-full flex flex-col items-center justify-center text-slate-500 opacity-60">
+                    <i class="fas fa-chart-simple text-5xl mb-3"></i>
+                    <p>Select options & Analyze</p>
                 </div>
-                <input type="hidden" id="analysisType" value="3">
-            </div>
 
-            <button id="generateBtn" class="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-400 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-teal-500/20 transition transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                <span>Generate Analysis</span> <i class="fas fa-bolt"></i>
-            </button>
+                <div id="state-loading" class="hidden h-full flex flex-col items-center justify-center">
+                    <div class="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                    <p class="text-teal-400 animate-pulse text-sm font-medium">Processing...</p>
+                </div>
+
+                <div id="state-content" class="hidden space-y-4 pb-20">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-white font-semibold">Results</h3>
+                        <div class="flex gap-2">
+                            <button onclick="copyResults()" class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded transition"><i class="fas fa-copy mr-1"></i> Copy</button>
+                            <button onclick="downloadReport()" class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded transition"><i class="fas fa-download mr-1"></i> Save</button>
+                        </div>
+                    </div>
+
+                    <div id="chart-wrapper" class="hidden glass rounded-xl p-4">
+                        <div class="relative h-56 w-full">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div id="text-result" class="glass rounded-xl p-5 markdown-body text-sm"></div>
+                </div>
+            </div>
         </div>
 
-        <!-- Right Panel: Results -->
-        <div class="flex-1 bg-slate-900/30 p-6 overflow-y-auto relative" id="results-container">
-            
-            <!-- Empty State -->
-            <div id="empty-state" class="h-full flex flex-col items-center justify-center text-slate-500 opacity-60">
-                <i class="fas fa-microchip text-6xl mb-4 animate-pulse"></i>
-                <p class="text-lg">AI is ready to crunch numbers.</p>
-            </div>
-
-            <!-- Loading State -->
-            <div id="loading-state" class="hidden h-full flex flex-col items-center justify-center">
-                <div class="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p class="text-teal-400 animate-pulse font-medium">Analyzing patterns...</p>
-            </div>
-
-            <!-- Content State -->
-            <div id="content-state" class="hidden space-y-6 max-w-4xl mx-auto pb-20">
-                
-                <!-- Tools Bar -->
-                <div class="flex justify-end gap-2 mb-4">
-                    <button onclick="downloadReport()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded text-sm transition"><i class="fas fa-download mr-1"></i> Save Report</button>
-                    <button onclick="copyResults()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded text-sm transition"><i class="fas fa-copy mr-1"></i> Copy</button>
-                </div>
-
-                <!-- Charts Section -->
-                <div id="chart-section" class="hidden glass rounded-2xl p-6">
-                    <h3 class="text-lg font-bold text-teal-400 mb-4 flex items-center"><i class="fas fa-chart-pie mr-2"></i> Class Performance Overview</h3>
-                    <div class="relative h-64 w-full">
-                        <canvas id="performanceChart"></canvas>
+        <!-- SECTION 2: CAREER GUIDE -->
+        <div id="panel-career" class="hidden w-full h-full flex-col max-w-3xl mx-auto p-4 md:p-6 min-h-0">
+            <div class="glass flex-1 rounded-2xl flex flex-col overflow-hidden border border-slate-700">
+                <div class="p-4 border-b border-slate-700 bg-slate-800/40 flex justify-between items-center shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                            <i class="fas fa-compass text-white text-xs"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-bold text-white">Career Pathfinder</h2>
+                            <p class="text-xs text-slate-400">AI Counselor</p>
+                        </div>
+                    </div>
+                    <div class="flex bg-slate-900 rounded-lg p-1 text-xs">
+                        <button onclick="setCareerMode('chat')" id="mode-chat" class="px-3 py-1 rounded bg-slate-700 text-white transition">Chat</button>
+                        <button onclick="setCareerMode('roadmap')" id="mode-roadmap" class="px-3 py-1 rounded text-slate-400 hover:text-white transition"><i class="fas fa-map mr-1"></i>Map</button>
                     </div>
                 </div>
 
-                <!-- Text Results -->
-                <div id="standard-result" class="glass rounded-2xl p-8 markdown-body hidden"></div>
-                <div id="comparative-result" class="glass rounded-2xl p-8 markdown-body hidden border-t-4 border-purple-500"></div>
-            </div>
-        </div>
-
-        <!-- Career Chat Interface (Hidden by default) -->
-        <div id="career-panel" class="hidden w-full flex-1 flex flex-col max-w-4xl mx-auto p-6">
-            <div id="chat-box" class="flex-1 glass rounded-2xl p-6 overflow-y-auto space-y-4 mb-4">
-                <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center"><i class="fas fa-robot text-white text-xs"></i></div>
-                    <div class="bg-slate-800 p-3 rounded-lg rounded-tl-none max-w-[80%] text-slate-200">
-                        Hello! I'm your AI Career Counselor. Tell me about your grades, interests, or favorite subjects, and I'll suggest some paths for you.
+                <div id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-900/20 custom-scroll">
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0 text-white text-xs"><i class="fas fa-robot"></i></div>
+                        <div class="bg-slate-800 p-3 rounded-lg rounded-tl-none max-w-[85%] text-sm text-slate-200 shadow-sm border border-slate-700">
+                            Hi! Ask me anything about your career or upload your resume in the Analysis tab!
+                        </div>
                     </div>
                 </div>
+
+                <div class="p-3 bg-slate-800/50 border-t border-slate-700 shrink-0">
+                    <form id="chat-form" class="flex gap-2">
+                        <input type="text" id="chat-input" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 focus:ring-1 focus:ring-purple-500 outline-none text-white text-sm placeholder-slate-500 transition" placeholder="Ask about jobs or skills..." autocomplete="off">
+                        <button type="submit" id="chat-submit-btn" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl transition shadow-lg shadow-purple-500/20"><i class="fas fa-paper-plane"></i></button>
+                    </form>
+                </div>
             </div>
-            <form id="chat-form" class="flex gap-2">
-                <input type="text" id="chat-input" class="flex-1 bg-slate-800 border-slate-700 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-500 outline-none text-white" placeholder="E.g., I'm good at Math but hate coding...">
-                <button type="submit" class="bg-teal-600 hover:bg-teal-500 text-white px-6 py-3 rounded-xl font-medium transition"><i class="fas fa-paper-plane"></i></button>
-            </form>
         </div>
 
     </main>
 
+    <!-- Unified Mobile Modal (Used for BOTH Analysis & Career) -->
+    <div id="mobile-modal" class="fixed inset-0 z-50 hidden md:hidden">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="closeModal()"></div>
+        <!-- Content -->
+        <div class="absolute bottom-0 left-0 right-0 bg-slate-900 rounded-t-2xl border-t border-slate-700 shadow-2xl modal-enter max-h-[85vh] flex flex-col">
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-2 text-teal-400 font-bold">
+                    <i class="fas fa-sparkles"></i> AI Result
+                </div>
+                <button onclick="closeModal()" class="w-8 h-8 bg-slate-800 rounded-full text-slate-400 hover:text-white flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="mobile-modal-content" class="p-5 overflow-y-auto markdown-body text-sm text-slate-200 leading-relaxed custom-scroll">
+                <!-- Content injected here -->
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- UI Logic ---
-        function setTab(tab) {
-            if(tab === 'analyze') {
-                document.getElementById('analyze-panel').classList.remove('hidden');
-                document.getElementById('results-container').classList.remove('hidden');
-                document.getElementById('career-panel').classList.add('hidden');
-                // Adjust layout for mobile
-                if(window.innerWidth < 768) document.getElementById('analyze-panel').style.display = 'flex';
+        function switchTab(tab) {
+            const analyzePanel = document.getElementById('panel-analyze');
+            const careerPanel = document.getElementById('panel-career');
+            const btnAnalyze = document.getElementById('tab-analyze');
+            const btnCareer = document.getElementById('tab-career');
+
+            if (tab === 'analyze') {
+                analyzePanel.classList.remove('hidden');
+                analyzePanel.classList.add('flex');
+                careerPanel.classList.add('hidden');
+                careerPanel.classList.remove('flex');
+                
+                btnAnalyze.className = "px-3 py-1.5 rounded-md text-sm font-medium transition bg-slate-700 text-white shadow";
+                btnCareer.className = "px-3 py-1.5 rounded-md text-sm font-medium transition text-slate-400 hover:text-white";
             } else {
-                document.getElementById('analyze-panel').classList.add('hidden');
-                if(window.innerWidth < 768) document.getElementById('analyze-panel').style.display = 'none';
-                document.getElementById('results-container').classList.add('hidden');
-                document.getElementById('career-panel').classList.remove('hidden');
-                document.getElementById('career-panel').classList.add('flex');
+                analyzePanel.classList.add('hidden');
+                analyzePanel.classList.remove('flex');
+                careerPanel.classList.remove('hidden');
+                careerPanel.classList.add('flex');
+
+                btnCareer.className = "px-3 py-1.5 rounded-md text-sm font-medium transition bg-purple-600 text-white shadow";
+                btnAnalyze.className = "px-3 py-1.5 rounded-md text-sm font-medium transition text-slate-400 hover:text-white";
             }
         }
 
         function selectMode(type, btn) {
-            document.querySelectorAll('.mode-btn').forEach(b => {
-                b.classList.remove('active', 'ring-2', 'ring-teal-500', 'bg-teal-500/10', 'text-teal-300', 'border-teal-500');
-                b.classList.add('border-slate-600', 'text-slate-400');
-            });
-            btn.classList.add('active', 'ring-2', 'ring-teal-500', 'bg-teal-500/10', 'text-teal-300', 'border-teal-500');
-            btn.classList.remove('border-slate-600', 'text-slate-400');
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
             document.getElementById('analysisType').value = type;
         }
 
+        // --- Analyze Logic ---
         const fileInput = document.getElementById('fileInput');
         fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
+            if (e.target.files.length) {
                 document.getElementById('fileName').innerText = e.target.files[0].name;
                 document.getElementById('fileName').classList.add('text-teal-400');
-                document.getElementById('generateBtn').disabled = false;
             }
         });
 
-        document.getElementById('textInput').addEventListener('input', (e) => {
-            document.getElementById('generateBtn').disabled = e.target.value.length === 0 && fileInput.files.length === 0;
-        });
-
-        // --- Analysis Logic ---
         let myChart = null;
-
         document.getElementById('generateBtn').addEventListener('click', async () => {
             const formData = new FormData();
             formData.append('file', fileInput.files[0] || '');
             formData.append('text_input', document.getElementById('textInput').value);
             formData.append('analysis_type', document.getElementById('analysisType').value);
-
-            // UI Updates
-            document.getElementById('empty-state').classList.add('hidden');
-            document.getElementById('content-state').classList.add('hidden');
-            document.getElementById('loading-state').classList.remove('hidden');
+            
+            document.getElementById('state-empty').classList.add('hidden');
+            document.getElementById('state-content').classList.add('hidden');
+            document.getElementById('state-loading').classList.remove('hidden');
+            
+            // Scroll only on desktop if needed, mobile uses modal
+            if(window.innerWidth >= 768) {
+                // Desktop logic handled by CSS flex
+            }
 
             try {
-                const response = await fetch('/api/analyze', { method: 'POST', body: formData });
-                const data = await response.json();
-
+                const res = await fetch('/api/analyze', { method: 'POST', body: formData });
+                const data = await res.json();
+                
                 if (data.error) throw new Error(data.error);
 
-                // Render Content
-                document.getElementById('loading-state').classList.add('hidden');
-                document.getElementById('content-state').classList.remove('hidden');
+                document.getElementById('state-loading').classList.add('hidden');
+                
+                // Construct result text
+                let content = "";
+                if(data.text_results.resume) content += data.text_results.resume;
+                else content = (data.text_results.standard || "") + "\n\n" + (data.text_results.comparative || "");
+                
+                // MOBILE: Show in Modal
+                if (window.innerWidth < 768) {
+                    showModal(content);
+                    // Also reset empty state so background doesn't look broken
+                    document.getElementById('state-empty').classList.remove('hidden');
+                } else {
+                    // DESKTOP: Show in panel
+                    document.getElementById('state-content').classList.remove('hidden');
+                    document.getElementById('text-result').innerHTML = marked.parse(content);
+                }
 
-                const stdDiv = document.getElementById('standard-result');
-                const cmpDiv = document.getElementById('comparative-result');
-
-                if (data.text_results.standard) {
-                    stdDiv.innerHTML = marked.parse(data.text_results.standard);
-                    stdDiv.classList.remove('hidden');
-                } else stdDiv.classList.add('hidden');
-
-                if (data.text_results.comparative) {
-                    cmpDiv.innerHTML = marked.parse(data.text_results.comparative);
-                    cmpDiv.classList.remove('hidden');
-                } else cmpDiv.classList.add('hidden');
-
-                // Render Chart
-                const chartSection = document.getElementById('chart-section');
-                if (data.chart_data) {
-                    chartSection.classList.remove('hidden');
+                // Handle Chart (Desktop only generally, or inside panel)
+                const chartWrapper = document.getElementById('chart-wrapper');
+                if (data.chart_data && window.innerWidth >= 768) {
+                    chartWrapper.classList.remove('hidden');
                     renderChart(data.chart_data);
                 } else {
-                    chartSection.classList.add('hidden');
+                    chartWrapper.classList.add('hidden');
                 }
 
             } catch (err) {
-                document.getElementById('loading-state').classList.add('hidden');
-                alert("Analysis failed: " + err.message);
-                document.getElementById('empty-state').classList.remove('hidden');
+                document.getElementById('state-loading').classList.add('hidden');
+                const errMsg = "Error: " + err.message;
+                alert(errMsg);
+                document.getElementById('state-empty').classList.remove('hidden');
             }
         });
 
-        function renderChart(chartData) {
-            const ctx = document.getElementById('performanceChart').getContext('2d');
+        function renderChart(data) {
             if (myChart) myChart.destroy();
-
+            const ctx = document.getElementById('performanceChart').getContext('2d');
             myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: chartData.labels,
+                    labels: data.labels,
                     datasets: [{
-                        label: 'Average Score',
-                        data: chartData.values,
-                        backgroundColor: 'rgba(94, 234, 212, 0.5)',
-                        borderColor: '#2dd4bf',
-                        borderWidth: 1,
-                        borderRadius: 6
+                        label: 'Avg Score',
+                        data: data.values,
+                        backgroundColor: '#2dd4bf',
+                        borderRadius: 4
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
                     scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-                    },
-                    plugins: { legend: { display: false } }
+                        y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                        x: { display: false }
+                    }
                 }
             });
         }
 
-        // --- Chat Logic ---
+        function downloadReport() {
+            const txt = document.getElementById('text-result').innerText;
+            const blob = new Blob([txt], {type: 'text/plain'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'analysis.txt';
+            a.click();
+        }
+
+        function copyResults() {
+             const txt = document.getElementById('text-result').innerText;
+             navigator.clipboard.writeText(txt);
+             alert("Copied to clipboard");
+        }
+
+        // --- Career Logic ---
+        let careerMode = 'chat';
+        function setCareerMode(mode) {
+            careerMode = mode;
+            const btnChat = document.getElementById('mode-chat');
+            const btnMap = document.getElementById('mode-roadmap');
+            
+            if (mode === 'chat') {
+                btnChat.className = "px-3 py-1 rounded bg-slate-700 text-white transition";
+                btnMap.className = "px-3 py-1 rounded text-slate-400 hover:text-white transition";
+                document.getElementById('chat-input').placeholder = "Ask a career question...";
+            } else {
+                btnMap.className = "px-3 py-1 rounded bg-purple-600 text-white transition";
+                btnChat.className = "px-3 py-1 rounded text-slate-400 hover:text-white transition";
+                document.getElementById('chat-input').placeholder = "Enter a job title (e.g. Data Scientist)...";
+            }
+        }
+
         document.getElementById('chat-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const input = document.getElementById('chat-input');
+            const btn = document.getElementById('chat-submit-btn');
             const msg = input.value.trim();
-            if (!msg) return;
+            if(!msg) return;
 
             addMsg(msg, 'user');
             input.value = '';
+            
+            // Show loading state
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
             try {
                 const res = await fetch('/api/career-guide', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({message: msg})
+                    body: JSON.stringify({ message: msg, mode: careerMode })
                 });
                 const data = await res.json();
-                addMsg(data.response || data.error, 'ai');
+                
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+
+                if(data.error) throw new Error(data.error);
+                
+                // MOBILE: Show in Modal
+                if (window.innerWidth < 768) {
+                    showModal(data.response);
+                } 
+                // ALWAYS: Add to chat history
+                addMsg(data.response, 'ai');
+                
             } catch (err) {
-                addMsg("Sorry, I couldn't connect.", 'ai');
+                console.error(err);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                const errText = "Sorry, I couldn't reach the AI server. Please try again.";
+                if (window.innerWidth < 768) showModal(errText);
+                addMsg(errText, 'ai');
             }
         });
 
-        function addMsg(text, type) {
+        function addMsg(text, sender) {
             const box = document.getElementById('chat-box');
             const div = document.createElement('div');
-            div.className = `flex items-start gap-3 ${type === 'user' ? 'flex-row-reverse' : ''}`;
+            div.className = `flex items-start gap-3 ${sender === 'user' ? 'flex-row-reverse' : ''}`;
             
-            const avatar = type === 'ai' 
-                ? '<div class="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0"><i class="fas fa-robot text-white text-xs"></i></div>'
-                : '<div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0"><i class="fas fa-user text-white text-xs"></i></div>';
+            const content = marked.parse(text);
             
-            const bubble = `<div class="${type === 'ai' ? 'bg-slate-800 text-slate-200' : 'bg-blue-600 text-white'} p-3 rounded-lg ${type === 'ai' ? 'rounded-tl-none' : 'rounded-tr-none'} max-w-[80%] text-sm leading-relaxed">${text}</div>`;
-            
-            div.innerHTML = avatar + bubble;
+            const bubble = `
+                <div class="${sender === 'ai' ? 'bg-slate-800 text-slate-200 border border-slate-700' : 'bg-purple-600 text-white'} p-3 rounded-lg ${sender === 'ai' ? 'rounded-tl-none' : 'rounded-tr-none'} max-w-[85%] text-sm shadow-sm markdown-body">
+                    ${content}
+                </div>
+            `;
+            const icon = sender === 'ai' 
+                ? '<div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0 text-white text-xs"><i class="fas fa-robot"></i></div>'
+                : '<div class="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center flex-shrink-0 text-white text-xs"><i class="fas fa-user"></i></div>';
+
+            div.innerHTML = icon + bubble;
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
         }
 
-        // --- Utilities ---
-        function downloadReport() {
-            const content = document.getElementById('standard-result').innerText + "\n\n" + document.getElementById('comparative-result').innerText;
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Student_Analysis_${new Date().toISOString().slice(0,10)}.txt`;
-            a.click();
+        // Modal Logic
+        function showModal(content) {
+            const modal = document.getElementById('mobile-modal');
+            const modalContent = document.getElementById('mobile-modal-content');
+            modalContent.innerHTML = marked.parse(content);
+            modal.classList.remove('hidden');
         }
 
-        function copyResults() {
-            const content = document.getElementById('standard-result').innerText;
-            navigator.clipboard.writeText(content);
-            alert("Analysis copied to clipboard!");
+        function closeModal() {
+            document.getElementById('mobile-modal').classList.add('hidden');
         }
     </script>
 </body>

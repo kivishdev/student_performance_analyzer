@@ -24,7 +24,6 @@ def initialize_gemini():
 def analyze_student_data(student_data):
     model = initialize_gemini()
     if not model: return "Error: API Key missing."
-    
     try:
         prompt = _create_analysis_prompt(student_data)
         return _generate_with_retry(model, prompt)
@@ -34,12 +33,45 @@ def analyze_student_data(student_data):
 def generate_comparative_analysis(student_data):
     model = initialize_gemini()
     if not model: return "Error: API Key missing."
-
     try:
         prompt = _create_comparative_prompt(student_data)
         return _generate_with_retry(model, prompt)
     except Exception as e:
         return f"Error: {str(e)}"
+
+def analyze_resume(resume_text):
+    """Specific function for analyzing resumes."""
+    model = initialize_gemini()
+    if not model: return "Error: API Key missing."
+    try:
+        # Truncate if too long
+        text = str(resume_text)[:15000]
+        prompt = f"""You are an expert Career Coach and HR Manager. Analyze this resume/CV.
+        
+        Please provide the output in the following Markdown format:
+
+        ### 📋 Resume Summary
+        [2-3 sentence professional summary of the candidate]
+
+        ### ⭐ Key Strengths
+        * **Skill 1**: [Detail]
+        * **Skill 2**: [Detail]
+        * **Experience**: [Highlight]
+
+        ### 🚩 Areas for Improvement
+        * [Weakness or formatting issue]
+        * [Missing keyword or skill]
+
+        ### 💼 Career Fit
+        * **Best Roles**: [Role 1], [Role 2]
+        * **Industry**: [Industry Name]
+
+        Resume Content:
+        "{text}"
+        """
+        return _generate_with_retry(model, prompt)
+    except Exception as e:
+        return f"Error analyzing resume: {str(e)}"
 
 def _generate_with_retry(model, prompt):
     for attempt in range(MAX_RETRIES):
@@ -54,50 +86,41 @@ def _generate_with_retry(model, prompt):
 
 def _create_analysis_prompt(student_data):
     if isinstance(student_data, pd.DataFrame):
-        data_str = student_data.head(50).to_string() # Limit to 50 for speed
-        return f"""Analyze these students. For each student, provide a mini-profile using this EXACT Markdown format:
-
+        data_str = student_data.head(50).to_string()
+        return f"""Analyze these students. Markdown format:
 ### Student Name
 * **Performance**: [Summary]
-* **Strength**: [Strength]
-* **Weakness**: [Weakness]
 * **Action**: [Recommendation]
 
 Data:
 {data_str}
 """
     else:
-        # Text input
-        return f"""Analyze this student text. Use this Markdown format:
-
-### Skills Assessment
-* **Communication**: [Analysis]
-* **Critical Thinking**: [Analysis]
-
-### Recommendations
+        text_content = str(student_data)[:10000]
+        return f"""Analyze this academic text/essay. Markdown format:
+### Summary
+[Overview]
+### Assessment
 * [Point 1]
+### Feedback
 * [Point 2]
 
-Text: "{student_data[:4000]}"
+Content:
+"{text_content}"
 """
 
 def _create_comparative_prompt(student_data):
     if isinstance(student_data, pd.DataFrame):
         desc = student_data.describe().to_string()
-        return f"""Analyze the class performance based on these statistics. Use Markdown:
-
+        return f"""Analyze class stats. Markdown format:
 ### Class Overview
-[One paragraph summary]
+[Summary]
+### Key Stats
+* **Top**: [Subject]
+### Strategy
+* [Tip]
 
-### Key Statistics
-* **Top Subject**: [Subject]
-* **Subject Needing Focus**: [Subject]
-
-### Teaching Strategy
-* [Strategy 1]
-* [Strategy 2]
-
-Statistics:
+Stats:
 {desc}
 """
     return "Comparative analysis requires structured data."
