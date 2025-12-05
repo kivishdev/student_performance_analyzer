@@ -11,7 +11,13 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
         
-        body { font-family: 'Outfit', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            background-color: #0f172a; 
+            color: #f8fafc;
+            /* Prevents accidental pull-to-refresh on mobile */
+            overscroll-behavior-y: contain; 
+        }
         
         .glass {
             background: rgba(30, 41, 59, 0.75);
@@ -99,9 +105,7 @@
 
                     <div class="text-center text-xs text-slate-500 uppercase tracking-wider font-semibold">- OR -</div>
 
-                    <textarea id="textInput" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition h-20 resize-none" placeholder="Enter Marks in Text Here...
-                    For ex: John doe
-                    Maths: 90/100"></textarea>
+                    <textarea id="textInput" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-teal-500 outline-none transition h-20 resize-none" placeholder="Paste text data here..."></textarea>
                 </div>
 
                 <div class="space-y-2">
@@ -130,7 +134,7 @@
                 </div>
             </div>
 
-            <!-- Results Column (Scroll Fix: h-full + overflow-y-auto) -->
+            <!-- Results Column -->
             <div class="flex-1 bg-slate-900/30 p-4 md:p-6 overflow-y-auto relative min-h-0 h-full custom-scroll" id="results-area">
                 <div id="state-empty" class="h-full flex flex-col items-center justify-center text-slate-500 opacity-60">
                     <i class="fas fa-chart-simple text-5xl mb-3"></i>
@@ -268,32 +272,45 @@
             formData.append('text_input', document.getElementById('textInput').value);
             formData.append('analysis_type', document.getElementById('analysisType').value);
             
+            // Set UI to loading state
             document.getElementById('state-empty').classList.add('hidden');
             document.getElementById('state-content').classList.add('hidden');
             document.getElementById('state-loading').classList.remove('hidden');
-            
-            // Scroll only on desktop if needed, mobile uses modal
-            if(window.innerWidth >= 768) {
-                // Desktop logic handled by CSS flex
+
+            // MOBILE: Show Loading Modal IMMEDIATELY
+            if (window.innerWidth < 768) {
+                const loadingHtml = `
+                    <div class="flex flex-col items-center justify-center py-10">
+                        <div class="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                        <p class="text-teal-400 animate-pulse font-medium text-lg">Analyzing Data...</p>
+                        <p class="text-slate-500 text-sm mt-2">Please wait, do not reload.</p>
+                    </div>
+                `;
+                showModal(loadingHtml);
             }
+
+            // Prevent accidental reload
+            window.onbeforeunload = function() { return "Analysis in progress. Are you sure you want to leave?"; };
 
             try {
                 const res = await fetch('/api/analyze', { method: 'POST', body: formData });
                 const data = await res.json();
                 
+                // Clear reload protection
+                window.onbeforeunload = null;
+
                 if (data.error) throw new Error(data.error);
 
                 document.getElementById('state-loading').classList.add('hidden');
                 
-                // Construct result text
                 let content = "";
                 if(data.text_results.resume) content += data.text_results.resume;
                 else content = (data.text_results.standard || "") + "\n\n" + (data.text_results.comparative || "");
                 
-                // MOBILE: Show in Modal
+                // MOBILE: Update Modal with Actual Content
                 if (window.innerWidth < 768) {
                     showModal(content);
-                    // Also reset empty state so background doesn't look broken
+                    // Also unhide empty state on background so it doesn't look blank
                     document.getElementById('state-empty').classList.remove('hidden');
                 } else {
                     // DESKTOP: Show in panel
@@ -301,20 +318,24 @@
                     document.getElementById('text-result').innerHTML = marked.parse(content);
                 }
 
-                // Handle Chart (Desktop only generally, or inside panel)
-                const chartWrapper = document.getElementById('chart-wrapper');
                 if (data.chart_data && window.innerWidth >= 768) {
-                    chartWrapper.classList.remove('hidden');
+                    document.getElementById('chart-wrapper').classList.remove('hidden');
                     renderChart(data.chart_data);
                 } else {
-                    chartWrapper.classList.add('hidden');
+                    document.getElementById('chart-wrapper').classList.add('hidden');
                 }
 
             } catch (err) {
+                window.onbeforeunload = null;
                 document.getElementById('state-loading').classList.add('hidden');
                 const errMsg = "Error: " + err.message;
-                alert(errMsg);
-                document.getElementById('state-empty').classList.remove('hidden');
+                
+                if (window.innerWidth < 768) {
+                    showModal(errMsg);
+                } else {
+                    alert(errMsg);
+                    document.getElementById('state-empty').classList.remove('hidden');
+                }
             }
         });
 
@@ -387,9 +408,16 @@
             addMsg(msg, 'user');
             input.value = '';
             
-            // Show loading state
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            // MOBILE: Show Modal immediately for Career as well if preferred, 
+            // but chat usually stays in chat. Based on request, AI answer in Popup.
+            if (window.innerWidth < 768) {
+                // Optional: Show "Typing..." in modal or just wait for result?
+                // User asked "when AI answers should be appear in pop up". 
+                // We'll wait for response then show modal.
+            }
 
             try {
                 const res = await fetch('/api/career-guide', {
@@ -404,11 +432,11 @@
 
                 if(data.error) throw new Error(data.error);
                 
-                // MOBILE: Show in Modal
+                // MOBILE: Show Result in Modal
                 if (window.innerWidth < 768) {
                     showModal(data.response);
                 } 
-                // ALWAYS: Add to chat history
+                // Always add to history
                 addMsg(data.response, 'ai');
                 
             } catch (err) {
@@ -446,7 +474,14 @@
         function showModal(content) {
             const modal = document.getElementById('mobile-modal');
             const modalContent = document.getElementById('mobile-modal-content');
-            modalContent.innerHTML = marked.parse(content);
+            
+            // Check if content implies loading, if so don't parse markdown yet if it's raw HTML
+            if (content.includes('animate-spin')) {
+                modalContent.innerHTML = content;
+            } else {
+                modalContent.innerHTML = marked.parse(content);
+            }
+            
             modal.classList.remove('hidden');
         }
 
